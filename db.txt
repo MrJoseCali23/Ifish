@@ -1,0 +1,1 @@
+CREATE DATABASE ifish_db;
