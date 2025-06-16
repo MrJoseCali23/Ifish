@@ -26,10 +26,13 @@ Route::view('/ayuda', 'ayuda')->name('ayuda');
 
 Route::middleware(['auth'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
-    Route::view('/estanques', 'estanques')->name('estanques');
+    //Route::view('/estanques', 'estanques')->name('estanques');
+    // La nueva línea que apunta al controlador
+    Route::resource('estanques', App\Http\Controllers\EstanqueController::class);
+    Route::resource('dispensadores', App\Http\Controllers\DispensadorController::class);
+
     Route::view('/especies', 'especies')->name('especies');
     Route::view('/arduino', 'arduino')->name('arduino');
-    
     Route::view('/configuracion', 'configuracion')->name('configuracion');
 
 });

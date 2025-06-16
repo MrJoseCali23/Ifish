@@ -12,7 +12,7 @@
         <span>Dashboard</span>
     </a>
 
-    <a class="nav-link @if(Route::currentRouteName() == 'estanques') active @endif" href="{{ route('estanques') }}">
+    <a class="nav-link @if(request()->routeIs('estanques.*')) active @endif" href="{{ route('estanques.index') }}">
         <i class="bi bi-water"></i>
         <span>Estanques</span>
     </a>
@@ -30,6 +30,10 @@
     <a class="nav-link @if(Route::currentRouteName() == 'reportes') active @endif" href="{{ route('reportes') }}">
         <i class="bi bi-file-earmark-text"></i>
         <span>Reportes</span>
+    </a>
+    <a class="nav-link @if(request()->routeIs('dispensadores.*')) active @endif" href="{{ route('dispensadores.index') }}">
+        <i class="bi bi-cpu-fill"></i>
+        <span>Dispensadores</span>
     </a>
 
     {{-- Solo visible para ADMIN --}}
