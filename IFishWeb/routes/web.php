@@ -29,7 +29,7 @@ Route::middleware(['auth'])->group(function () {
     Route::view('/estanques', 'estanques')->name('estanques');
     Route::view('/especies', 'especies')->name('especies');
     Route::view('/arduino', 'arduino')->name('arduino');
-    Route::view('/reportes', 'reportes')->name('reportes');
+    
     Route::view('/configuracion', 'configuracion')->name('configuracion');
 
 });
@@ -41,6 +41,7 @@ Route::middleware(['auth'])->group(function () {
 });
 Route::middleware(['auth', 'isadmin'])->group(function () {
     Route::resource('usuarios', UsuarioController::class);
+    Route::view('/reportes', 'reportes')->name('reportes');
 });
 
 require __DIR__.'/auth.php';

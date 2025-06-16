@@ -33,7 +33,7 @@
     </a>
 
     {{-- Solo visible para ADMIN --}}
-    @if(Auth::user()->rol === 'admin')
+    @if(Auth::user()->rol === 'Admin')
         <a class="nav-link @if(Route::currentRouteName() == 'usuarios') active @endif" href="{{ route('usuarios.index') }}">
             <i class="bi bi-people-fill"></i>
             <span>Usuarios</span>
