@@ -19,18 +19,19 @@ use App\Http\Controllers\UsuarioController;
 Route::get('/', function () {
     return view('inicio'); // pública
 });
-
+// 👇 Ruta pública
+Route::view('/estadisticas', 'estadisticas')->name('estadisticas');
+Route::view('/ayuda', 'ayuda')->name('ayuda');
 // Secciones privadas (requieren login)
 
 Route::middleware(['auth'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
-    Route::view('/estadisticas', 'estadisticas')->name('estadisticas');
     Route::view('/estanques', 'estanques')->name('estanques');
     Route::view('/especies', 'especies')->name('especies');
     Route::view('/arduino', 'arduino')->name('arduino');
     Route::view('/reportes', 'reportes')->name('reportes');
     Route::view('/configuracion', 'configuracion')->name('configuracion');
-    Route::view('/ayuda', 'ayuda')->name('ayuda');
+
 });
 
 Route::middleware(['auth'])->group(function () {

@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 | is assigned the "api" middleware group. Enjoy building your API!
 |
 */
+// routes/web.php
+use App\Http\Controllers\WeatherController;
+
+Route::get('/weather/colomi', [WeatherController::class, 'getColomiWeather'])->name('weather.colomi');
 
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
