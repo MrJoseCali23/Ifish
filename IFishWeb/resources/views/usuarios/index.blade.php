@@ -32,7 +32,7 @@
                     <td>{{ $usuario->name }}</td>
                     <td>{{ $usuario->email }}</td>
                     <td>
-                        @if($usuario->rol === 'admin')
+                        @if($usuario->rol === 'Admin')
                             <span class="badge bg-primary">Administrador</span>
                         @else
                             <span class="badge bg-secondary">Trabajador</span>
