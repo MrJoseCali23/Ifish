@@ -35,7 +35,10 @@
         <i class="bi bi-cpu-fill"></i>
         <span>Dispensadores</span>
     </a>
-
+    <a class="nav-link @if(request()->routeIs('tipos_comida.*')) active @endif" href="{{ route('tipos_comida.index') }}">
+         <i class="bi bi-egg-fried"></i> {{-- O el ícono que más te guste --}}
+    <span>Tipos de Comida</span>
+    </a>
     {{-- Solo visible para ADMIN --}}
     @if(Auth::user()->rol === 'Admin')
         <a class="nav-link @if(Route::currentRouteName() == 'usuarios') active @endif" href="{{ route('usuarios.index') }}">
