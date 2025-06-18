@@ -42,6 +42,8 @@ Route::middleware(['auth'])->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
     Route::resource('tipos_comida', App\Http\Controllers\TipoComidaController::class);
+    Route::resource('horarios', App\Http\Controllers\HorarioAlimentacionController::class);
+    Route::post('dispensadores/{dispensadore}/alimentar', [App\Http\Controllers\DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
 });
 Route::middleware(['auth', 'isadmin'])->group(function () {
     Route::resource('usuarios', UsuarioController::class);

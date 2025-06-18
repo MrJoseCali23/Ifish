@@ -3,8 +3,11 @@
 namespace App\Http\Controllers;
 use App\Models\Dispensador;
 use App\Models\Estanque;
+use App\Models\TipoComida;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
+use App\Models\RegistroAlimentacion;
+use Illuminate\Support\Facades\Auth;
 
 class DispensadorController extends Controller
 {
@@ -13,13 +16,16 @@ class DispensadorController extends Controller
      *
      * @return \Illuminate\Http\Response
      */
+
     public function index()
     {
-        // Usamos with('estanque') para cargar la relación eficientemente (Eager Loading).
-        $dispensadores = Dispensador::with('estanque')->latest('id_dispensador')->paginate(10);
+        // Antes: Dispensador::with('estanque')->...
+        // Ahora cargamos ambas relaciones a la vez.
+        $dispensadores = Dispensador::with(['estanque', 'horarios'])->latest('id_dispensador')->paginate(10);
 
-        // Retornamos la vista y le pasamos la colección de dispensadores.
-        return view('public.dispensadores.index', compact('dispensadores'));
+        $tipos_comida = TipoComida::orderBy('nombre_comida')->get();
+
+        return view('public.dispensadores.index', compact('dispensadores', 'tipos_comida'));
     }
 
     /**
@@ -124,4 +130,28 @@ class DispensadorController extends Controller
         return redirect()->route('dispensadores.index')
                         ->with('success', '¡Dispensador eliminado exitosamente!');
     }
+    public function manualFeed(Request $request, Dispensador $dispensadore)
+    {
+        // 1. VALIDAMOS LOS DATOS QUE VIENEN DEL FORMULARIO DEL MODAL
+        $request->validate([
+            'id_tipo_comida' => 'required|integer|exists:Tipos_Comida,id_tipo_comida',
+            'cantidad_dispensada_gramos' => 'required|integer|min:1',
+        ]);
+
+        // 2. CREAMOS EL REGISTRO EN LA TABLA DE HISTORIAL
+        RegistroAlimentacion::create([
+            'id_dispensador' => $dispensadore->id_dispensador,
+            'id_tipo_comida' => $request->id_tipo_comida,
+            'iniciado_por_usuario' => Auth::id(), // El usuario que está logueado
+            'cantidad_dispensada_gramos' => $request->cantidad_dispensada_gramos,
+            'tipo_alimentacion' => 'Manual', // ¡La clave de esta funcionalidad!
+            'exitoso' => true, // Asumimos que la acción manual es exitosa
+        ]);
+
+        // 3. (Futuro) Aquí irá la lógica para enviar la señal al dispositivo ESP32.
+
+        // 4. REDIRIGIMOS DE VUELTA CON UN MENSAJE DE ÉXITO
+        return redirect()->route('dispensadores.index')->with('success', '¡Alimentación manual registrada exitosamente!');
+    }
+
 }

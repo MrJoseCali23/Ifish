@@ -19,56 +19,107 @@
 
     <div class="card shadow">
         <div class="card-body">
-            <div class="table-responsive">
-                <table class="table table-striped table-hover align-middle">
-                    <thead class="table-dark">
-                        <tr>
-                            <th>MAC Address</th>
-                            <th>Estanque Asignado</th>
-                            <th>Modelo</th>
-                            <th>Estado</th>
-                            <th>Nivel Comida (Kg)</th>
-                            <th class="text-end">Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @forelse ($dispensadores as $dispensador)
-                            <tr>
-                                <td><code>{{ $dispensador->mac_address }}</code></td>
-                                {{-- Usamos la relación para obtener el nombre del estanque --}}
-                                <td>{{ $dispensador->estanque->nombre_estanque ?? 'No asignado' }}</td>
-                                <td>{{ $dispensador->modelo }}</td>
-                                <td>
-                                    @if($dispensador->estado == 'Activo')
-                                        <span class="badge bg-success">{{ $dispensador->estado }}</span>
-                                    @elseif($dispensador->estado == 'Inactivo')
-                                        <span class="badge bg-secondary">{{ $dispensador->estado }}</span>
-                                    @else
-                                        <span class="badge bg-danger">{{ $dispensador->estado }}</span>
-                                    @endif
-                                </td>
-                                <td>{{ number_format($dispensador->nivel_comida_actual_kg, 2) }} Kg</td>
-                                <td class="text-end">
-                                    <a href="{{ route('dispensadores.edit', $dispensador) }}" class="btn btn-sm btn-warning" title="Editar">
-                                        <i class="bi bi-pencil-square"></i>
-                                    </a>
-                                    <form action="{{ route('dispensadores.destroy', $dispensador) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este dispensador?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                            <i class="bi bi-trash"></i>
-                                        </button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td colspan="7" class="text-center">No hay dispensadores registrados todavía.</td>
-                            </tr>
-                        @endforelse
-                    </tbody>
-                </table>
+            <div class="row g-4">
+                @forelse ($dispensadores as $dispensadore)
+                    <div class="col-12 col-md-6 col-lg-4 d-flex">
+                        <div class="card shadow-sm h-100 w-100">
+                            <div class="card-header d-flex justify-content-between align-items-center bg-light">
+                                <h5 class="card-title mb-0 fw-bold text-primary">
+                                    <i class="bi bi-cpu-fill me-2"></i>
+                                    <code>{{ $dispensadore->mac_address }}</code>
+                                </h5>
+                                @if($dispensadore->estado == 'Activo')
+                                    <span class="badge bg-success">{{ $dispensadore->estado }}</span>
+                                @elseif($dispensadore->estado == 'Inactivo')
+                                    <span class="badge bg-secondary">{{ $dispensadore->estado }}</span>
+                                @else
+                                    <span class="badge bg-danger">{{ $dispensadore->estado }}</span>
+                                @endif
+                            </div>
+                            <div class="card-body d-flex flex-column">
+                                <div>
+                                    <p class="card-text mb-1"><i class="bi bi-water text-muted me-2"></i><strong>Estanque:</strong> {{ $dispensadore->estanque->nombre_estanque ?? 'No asignado' }}</p>
+                                    <p class="card-text"><i class="bi bi-info-circle text-muted me-2"></i><strong>Modelo:</strong> {{ $dispensadore->modelo ?? 'N/A' }}</p>
+
+                                    <div class="mt-3">
+                                        <p class="mb-1"><i class="bi bi-clock-history text-muted me-2"></i><strong>Horarios Programados:</strong></p>
+                                        @if($dispensadore->horarios->count() > 0)
+                                            <ul class="list-group list-group-flush">
+                                                @foreach($dispensadore->horarios->sortBy('hora_programada') as $horario)
+                                                    <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-0 border-0">
+                                                        <span><i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($horario->hora_programada)->format('h:i A') }} - {{ $horario->cantidad_gramos }}g</span>
+                                                        @if($horario->activo)
+                                                            <span class="badge bg-success rounded-pill">Activo</span>
+                                                        @else
+                                                            <span class="badge bg-secondary rounded-pill">Inactivo</span>
+                                                        @endif
+                                                    </li>
+                                                @endforeach
+                                            </ul>
+                                        @else
+                                            <p class="text-muted fst-italic small">Sin horarios programados.</p>
+                                        @endif
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-auto pt-3">
+                                    <label class="form-label d-block mb-1">Nivel de Comida: <strong>{{ number_format($dispensadore->nivel_comida_actual_kg, 2) }} Kg</strong></label>
+                                    @php
+                                        $capacidad_max_kg = 25;
+                                        $porcentaje = ($capacidad_max_kg > 0) ? ($dispensadore->nivel_comida_actual_kg / $capacidad_max_kg) * 100 : 0;
+                                        $porcentaje = min(100, $porcentaje);
+                                        $color_barra = 'bg-success';
+                                        if ($porcentaje < 50) $color_barra = 'bg-warning text-dark';
+                                        if ($porcentaje < 20) $color_barra = 'bg-danger';
+                                    @endphp
+                                    <div class="progress" style="height: 20px;">
+                                        <div class="progress-bar progress-bar-striped {{ $color_barra }}" role="progressbar" style="width: {{ $porcentaje }}%;" aria-valuenow="{{ $porcentaje }}" aria-valuemin="0" aria-valuemax="100">{{ round($porcentaje) }}%</div>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="card-footer text-end">
+                                <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#manualFeedModal{{ $dispensadore->id_dispensador }}" title="Alimentación Manual"><i class="bi bi-send-fill"></i></button>
+                                <a href="{{ route('dispensadores.edit', $dispensadore) }}" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil-square"></i></a>
+                                <form action="{{ route('dispensadores.destroy', $dispensadore) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este dispensador?');">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="modal fade" id="manualFeedModal{{ $dispensadore->id_dispensador }}" tabindex="-1" aria-hidden="true">
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header"><h5 class="modal-title">Alimentación Manual: {{ $dispensadore->mac_address }}</h5><button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button></div>
+                                <form method="POST" action="{{ route('dispensadores.manualFeed', $dispensadore) }}">
+                                    @csrf
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label for="id_tipo_comida_{{ $dispensadore->id_dispensador }}" class="form-label">Tipo de Comida</label>
+                                            <select class="form-select" id="id_tipo_comida_{{ $dispensadore->id_dispensador }}" name="id_tipo_comida" required>
+                                                <option value="" disabled selected>Selecciona un tipo de comida...</option>
+                                                @foreach ($tipos_comida as $tipo)
+                                                    <option value="{{ $tipo->id_tipo_comida }}">{{ $tipo->nombre_comida }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">Cantidad (en gramos)</label>
+                                            <input type="number" class="form-control" id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer"><button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button><button type="submit" class="btn btn-primary">Dispensar Manualmente</button></div>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                @empty
+                    <div class="col-12"><div class="alert alert-info text-center">No hay dispensadores registrados todavía.</div></div>
+                @endforelse
             </div>
+
             @if ($dispensadores->hasPages())
                 <div class="d-flex justify-content-center mt-4">
                     {{ $dispensadores->links() }}

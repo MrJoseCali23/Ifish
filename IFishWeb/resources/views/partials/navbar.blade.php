@@ -11,7 +11,10 @@
         <i class="bi bi-speedometer2"></i>
         <span>Dashboard</span>
     </a>
-
+    <a class="nav-link @if(request()->routeIs('horarios.*')) active @endif" href="{{ route('horarios.index') }}">
+        <i class="bi bi-clock-history"></i>
+    <span>Horarios</span>
+    </a>
     <a class="nav-link @if(request()->routeIs('estanques.*')) active @endif" href="{{ route('estanques.index') }}">
         <i class="bi bi-water"></i>
         <span>Estanques</span>
