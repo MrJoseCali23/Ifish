@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Models\HorarioAlimentacion;
+use App\Models\Dispensador;
 
 class Estanque extends Model
 {
@@ -43,5 +45,16 @@ class Estanque extends Model
     public function actualizadoPor()
     {
         return $this->belongsTo(User::class, 'actualizado_por_usuario');
+    }
+    public function horarios()
+    {
+        return $this->hasManyThrough(
+            HorarioAlimentacion::class, // El modelo final al que queremos llegar
+            Dispensador::class,         // El modelo intermedio
+            'id_estanque',              // Clave foránea en la tabla intermedia (dispensadores)
+            'id_dispensador',           // Clave foránea en la tabla final (horarios)
+            'id_estanque',              // Clave local en esta tabla (estanques)
+            'id_dispensador'            // Clave local en la tabla intermedia (dispensadores)
+        );
     }
 }

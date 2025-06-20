@@ -40,7 +40,6 @@
                                 <div>
                                     <p class="card-text mb-1"><i class="bi bi-water text-muted me-2"></i><strong>Estanque:</strong> {{ $dispensadore->estanque->nombre_estanque ?? 'No asignado' }}</p>
                                     <p class="card-text"><i class="bi bi-info-circle text-muted me-2"></i><strong>Modelo:</strong> {{ $dispensadore->modelo ?? 'N/A' }}</p>
-
                                     <div class="mt-3">
                                         <p class="mb-1"><i class="bi bi-clock-history text-muted me-2"></i><strong>Horarios Programados:</strong></p>
                                         @if($dispensadore->horarios->count() > 0)
@@ -48,11 +47,20 @@
                                                 @foreach($dispensadore->horarios->sortBy('hora_programada') as $horario)
                                                     <li class="list-group-item d-flex justify-content-between align-items-center py-1 px-0 border-0">
                                                         <span><i class="bi bi-clock me-1"></i>{{ \Carbon\Carbon::parse($horario->hora_programada)->format('h:i A') }} - {{ $horario->cantidad_gramos }}g</span>
-                                                        @if($horario->activo)
-                                                            <span class="badge bg-success rounded-pill">Activo</span>
-                                                        @else
+                                                        
+                                                        {{-- ▼▼▼ ESTE ES EL BLOQUE CORREGIDO ▼▼▼ --}}
+                                                        @php
+                                                            $ejecutadoHoy = $horario->ultima_ejecucion && \Carbon\Carbon::parse($horario->ultima_ejecucion)->isToday();
+                                                        @endphp
+
+                                                        @if(!$horario->activo)
                                                             <span class="badge bg-secondary rounded-pill">Inactivo</span>
+                                                        @elseif($ejecutadoHoy)
+                                                            <span class="badge bg-info text-dark rounded-pill">Ya dispensado</span>
+                                                        @else
+                                                            <span class="badge bg-success rounded-pill">Activo</span>
                                                         @endif
+                                                        
                                                     </li>
                                                 @endforeach
                                             </ul>
@@ -61,7 +69,6 @@
                                         @endif
                                     </div>
                                 </div>
-                                
                                 <div class="mt-auto pt-3">
                                     <label class="form-label d-block mb-1">Nivel de Comida: <strong>{{ number_format($dispensadore->nivel_comida_actual_kg, 2) }} Kg</strong></label>
                                     @php
@@ -80,11 +87,30 @@
                             <div class="card-footer text-end">
                                 <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#manualFeedModal{{ $dispensadore->id_dispensador }}" title="Alimentación Manual"><i class="bi bi-send-fill"></i></button>
                                 <a href="{{ route('dispensadores.edit', $dispensadore) }}" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil-square"></i></a>
-                                <form action="{{ route('dispensadores.destroy', $dispensadore) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este dispensador?');">
+                                
+                                {{-- ▼▼▼ INICIO DEL CÓDIGO MEJORADO PARA BORRAR ▼▼▼ --}}
+                                @php
+                                    // Construimos el mensaje de advertencia aquí para mantener el HTML limpio
+                                    $warningMessage = '¿Estás seguro de que quieres eliminar este dispensador?';
+
+                                    if ($dispensadore->horarios_count > 0 || $dispensadore->registros_alimentacion_count > 0) {
+                                        $warningMessage .= '\n\nADVERTENCIA: Esta acción es irreversible y también eliminará:';
+                                        if ($dispensadore->horarios_count > 0) {
+                                            $warningMessage .= '\n- ' . $dispensadore->horarios_count . ' horario(s) programado(s).';
+                                        }
+                                        if ($dispensadore->registros_alimentacion_count > 0) {
+                                            $warningMessage .= '\n- ' . $dispensadore->registros_alimentacion_count . ' registro(s) del historial.';
+                                        }
+                                    }
+                                @endphp
+
+                                <form action="{{ route('dispensadores.destroy', $dispensadore) }}" method="POST" class="d-inline" onsubmit="return confirm('{{ $warningMessage }}');">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
                                 </form>
+                                {{-- ▲▲▲ FIN DEL CÓDIGO MEJORADO PARA BORRAR ▲▲▲ --}}
+
                             </div>
                         </div>
                     </div>

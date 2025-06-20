@@ -17,7 +17,6 @@
         </div>
     @endif
 
-    {{-- INICIO DEL NUEVO DISEÑO DE TARJETAS --}}
     <div class="row g-4">
         @forelse ($horarios as $horario)
             <div class="col-12 col-md-6 col-lg-4 d-flex">
@@ -25,14 +24,25 @@
                     <div class="card-header d-flex justify-content-between align-items-center bg-light">
                         <h5 class="card-title mb-0 fw-bold text-primary">
                             <i class="bi bi-clock-fill me-2"></i>
-                            {{-- Usamos Carbon para formatear la hora a un formato amigable (ej: 08:30 AM) --}}
                             {{ \Carbon\Carbon::parse($horario->hora_programada)->format('h:i A') }}
                         </h5>
-                        @if($horario->activo)
-                            <span class="badge bg-success">Activo</span>
-                        @else
+                        
+                        {{-- ▼▼▼ INICIO DEL BLOQUE CORREGIDO ▼▼▼ --}}
+                        @php
+                            // Esta variable solo existirá temporalmente aquí.
+                            // Comprobamos si hay una fecha de última ejecución Y si esa fecha es de hoy.
+                            $ejecutadoHoy = $horario->ultima_ejecucion && \Carbon\Carbon::parse($horario->ultima_ejecucion)->isToday();
+                        @endphp
+
+                        @if(!$horario->activo)
                             <span class="badge bg-secondary">Inactivo</span>
+                        @elseif($ejecutadoHoy)
+                            <span class="badge bg-info text-dark">Dispensado Hoy</span>
+                        @else
+                            <span class="badge bg-success">Activo</span>
                         @endif
+                        {{-- ▲▲▲ FIN DEL BLOQUE CORREGIDO ▲▲▲ --}}
+
                     </div>
                     <div class="card-body">
                         <p class="card-text mb-1" title="Dispensador">
@@ -41,7 +51,6 @@
                         </p>
                          <p class="card-text mb-1" title="Estanque">
                             <i class="bi bi-water text-muted me-2"></i>
-                            {{-- Fíjate cómo navegamos a través de las relaciones: horario -> dispensador -> estanque --}}
                             <strong>{{ $horario->dispensador->estanque->nombre_estanque ?? 'N/A' }}</strong>
                         </p>
                         <p class="card-text mb-1" title="Tipo de Comida">

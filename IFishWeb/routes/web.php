@@ -4,7 +4,6 @@ use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\UsuarioController;
 
-
 /*
 |--------------------------------------------------------------------------
 | Web Routes
@@ -20,7 +19,8 @@ Route::get('/', function () {
     return view('inicio'); // pública
 });
 // 👇 Ruta pública
-Route::view('/estadisticas', 'estadisticas')->name('estadisticas');
+Route::get('/estadisticas', [App\Http\Controllers\EstadisticasController::class, 'index'])->name('estadisticas');
+//Route::view('/estadisticas', 'estadisticas')->name('estadisticas');
 Route::view('/ayuda', 'ayuda')->name('ayuda');
 // Secciones privadas (requieren login)
 
@@ -44,6 +44,7 @@ Route::middleware(['auth'])->group(function () {
     Route::resource('tipos_comida', App\Http\Controllers\TipoComidaController::class);
     Route::resource('horarios', App\Http\Controllers\HorarioAlimentacionController::class);
     Route::post('dispensadores/{dispensadore}/alimentar', [App\Http\Controllers\DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
+    
 });
 Route::middleware(['auth', 'isadmin'])->group(function () {
     Route::resource('usuarios', UsuarioController::class);

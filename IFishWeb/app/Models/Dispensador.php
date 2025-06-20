@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HorarioAlimentacion;
+use App\Models\RegistroAlimentacion;
 class Dispensador extends Model
 {
     use HasFactory;
@@ -52,5 +53,9 @@ class Dispensador extends Model
         // El segundo es el nombre de la clave foránea en la tabla de horarios.
         // El tercero es la clave primaria de ESTA tabla (Dispensadores).
         return $this->hasMany(HorarioAlimentacion::class, 'id_dispensador', 'id_dispensador');
+    }
+    public function registrosAlimentacion()
+    {
+        return $this->hasMany(RegistroAlimentacion::class, 'id_dispensador', 'id_dispensador');
     }
 }

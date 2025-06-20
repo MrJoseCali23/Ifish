@@ -21,6 +21,7 @@ class HorarioAlimentacion extends Model
         'hora_programada',
         'cantidad_gramos',
         'activo',
+        'ultima_ejecucion'
     ];
 
     // --- DEFINICIÓN DE RELACIONES ---

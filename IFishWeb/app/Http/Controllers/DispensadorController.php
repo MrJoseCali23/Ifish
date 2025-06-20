@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use App\Models\RegistroAlimentacion;
 use Illuminate\Support\Facades\Auth;
 
+
 class DispensadorController extends Controller
 {
     /**
@@ -17,11 +18,15 @@ class DispensadorController extends Controller
      * @return \Illuminate\Http\Response
      */
 
+
     public function index()
     {
-        // Antes: Dispensador::with('estanque')->...
-        // Ahora cargamos ambas relaciones a la vez.
-        $dispensadores = Dispensador::with(['estanque', 'horarios'])->latest('id_dispensador')->paginate(10);
+        // Usamos withCount para obtener solo el NÚMERO de relaciones.
+        // Es mucho más eficiente que cargar todos los objetos.
+        $dispensadores = Dispensador::with('estanque')
+                                ->withCount(['horarios', 'registrosAlimentacion'])
+                                ->latest('id_dispensador')
+                                ->paginate(10);
 
         $tipos_comida = TipoComida::orderBy('nombre_comida')->get();
 
@@ -122,36 +127,54 @@ class DispensadorController extends Controller
 
 // app/Http/Controllers/DispensadorController.php
 
-    public function destroy(Dispensador $dispensadore) // <-- CAMBIO CLAVE
+    public function destroy(Dispensador $dispensadore)
     {
-        // Ahora $dispensadore SÍ será el objeto correcto con todos sus datos.
-        $dispensadore->delete();
+        // 1. Contamos los registros asociados ANTES de que se borren en cascada.
+        // Usamos la relación 'horarios()' que ya definimos en el modelo Dispensador.
+        $horariosAsociados = $dispensadore->horarios()->count();
+        
+        // Para los registros de alimentación, como no definimos la relación inversa, lo contamos así:
+        $registrosAsociados = RegistroAlimentacion::where('id_dispensador', $dispensadore->id_dispensador)->count();
 
-        return redirect()->route('dispensadores.index')
-                        ->with('success', '¡Dispensador eliminado exitosamente!');
+        // 2. Borramos el dispensador.
+        // La base de datos se encargará de borrar en cascada los horarios y registros.
+        $dispensadore->delete();
+        
+        // 3. Construimos un mensaje de éxito dinámico.
+        $mensaje = "¡Dispensador eliminado exitosamente!";
+
+        if ($horariosAsociados > 0 || $registrosAsociados > 0) {
+            $mensaje .= " Se eliminaron también {$horariosAsociados} horarios y {$registrosAsociados} registros de su historial.";
+        }
+
+        // 4. Redirigimos con el nuevo mensaje personalizado.
+        return redirect()->route('dispensadores.index')->with('success', $mensaje);
     }
     public function manualFeed(Request $request, Dispensador $dispensadore)
     {
-        // 1. VALIDAMOS LOS DATOS QUE VIENEN DEL FORMULARIO DEL MODAL
+        // 1. Validamos los datos del formulario del modal
         $request->validate([
             'id_tipo_comida' => 'required|integer|exists:Tipos_Comida,id_tipo_comida',
             'cantidad_dispensada_gramos' => 'required|integer|min:1',
         ]);
 
-        // 2. CREAMOS EL REGISTRO EN LA TABLA DE HISTORIAL
+        // 2. Creamos el registro en el historial
         RegistroAlimentacion::create([
             'id_dispensador' => $dispensadore->id_dispensador,
             'id_tipo_comida' => $request->id_tipo_comida,
-            'iniciado_por_usuario' => Auth::id(), // El usuario que está logueado
+            'iniciado_por_usuario' => Auth::id(),
             'cantidad_dispensada_gramos' => $request->cantidad_dispensada_gramos,
-            'tipo_alimentacion' => 'Manual', // ¡La clave de esta funcionalidad!
-            'exitoso' => true, // Asumimos que la acción manual es exitosa
+            'tipo_alimentacion' => 'Manual',
+            'exitoso' => true,
         ]);
 
-        // 3. (Futuro) Aquí irá la lógica para enviar la señal al dispositivo ESP32.
+        // 3. Dejamos la "carta en el buzón": establecemos el comando para el ESP
+        $dispensadore->comando_pendiente = 'dispensar';
+        $dispensadore->comando_valor = $request->input('cantidad_dispensada_gramos');
+        $dispensadore->save();
 
-        // 4. REDIRIGIMOS DE VUELTA CON UN MENSAJE DE ÉXITO
-        return redirect()->route('dispensadores.index')->with('success', '¡Alimentación manual registrada exitosamente!');
+        // 4. Redirigimos con un mensaje de éxito
+        return redirect()->route('dispensadores.index')->with('success', '¡Orden de alimentación manual enviada al dispensador!');
     }
 
 }

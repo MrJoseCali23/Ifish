@@ -13,9 +13,14 @@ class Kernel extends ConsoleKernel
      * @param  \Illuminate\Console\Scheduling\Schedule  $schedule
      * @return void
      */
+    // En app/Console/Kernel.php
+
     protected function schedule(Schedule $schedule)
     {
         // $schedule->command('inspire')->hourly();
+
+        // AÑADE ESTA LÍNEA:
+        $schedule->command('ifish:check-feedings')->everyMinute();
     }
 
     /**

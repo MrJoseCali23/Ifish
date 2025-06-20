@@ -3,7 +3,7 @@
 @section('title', 'Crear Nuevo Dispensador - iFish')
 
 @section('content')
-    <h2 class="text-primary fw-bold">🤖 Crear Nuevo Dispensador</h2>
+    <h2 class="text-primary fw-bold">Crear Nuevo Dispensador</h2>
 
     <div class="card shadow glass-effect mt-4">
         <div class="card-body">
