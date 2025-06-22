@@ -7,10 +7,6 @@
 
 {{-- Solo si ha iniciado sesión --}}
 @auth
-    <a class="nav-link @if(Route::currentRouteName() == 'dashboard') active @endif" href="{{ route('dashboard') }}">
-        <i class="bi bi-speedometer2"></i>
-        <span>Dashboard</span>
-    </a>
     <a class="nav-link @if(request()->routeIs('horarios.*')) active @endif" href="{{ route('horarios.index') }}">
         <i class="bi bi-clock-history"></i>
     <span>Horarios</span>
@@ -19,17 +15,6 @@
         <i class="bi bi-water"></i>
         <span>Estanques</span>
     </a>
-
-    <a class="nav-link @if(Route::currentRouteName() == 'especies') active @endif" href="{{ route('especies') }}">
-        <i class="bi bi-list-ul"></i>
-        <span>Especies</span>
-    </a>
-
-    <a class="nav-link @if(Route::currentRouteName() == 'arduino') active @endif" href="{{ route('arduino') }}">
-        <i class="bi bi-usb-symbol"></i>
-        <span>Arduino</span>
-    </a>
-
     <a class="nav-link @if(Route::currentRouteName() == 'reportes') active @endif" href="{{ route('reportes') }}">
         <i class="bi bi-file-earmark-text"></i>
         <span>Reportes</span>
@@ -39,7 +24,7 @@
         <span>Dispensadores</span>
     </a>
     <a class="nav-link @if(request()->routeIs('tipos_comida.*')) active @endif" href="{{ route('tipos_comida.index') }}">
-         <i class="bi bi-egg-fried"></i> {{-- O el ícono que más te guste --}}
+         <i class="bi bi-egg-fried"></i> 
     <span>Tipos de Comida</span>
     </a>
     {{-- Solo visible para ADMIN --}}
@@ -47,11 +32,6 @@
         <a class="nav-link @if(Route::currentRouteName() == 'usuarios') active @endif" href="{{ route('usuarios.index') }}">
             <i class="bi bi-people-fill"></i>
             <span>Usuarios</span>
-        </a>
-
-        <a class="nav-link @if(Route::currentRouteName() == 'configuracion') active @endif" href="{{ route('configuracion') }}">
-            <i class="bi bi-gear"></i>
-            <span>Configuración</span>
         </a>
     @endif
 @endauth

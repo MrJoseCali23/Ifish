@@ -35,7 +35,6 @@
                         <tbody>
                                     @forelse ($estanques as $estanque)
                                         <tr>
-                                            {{-- YA NO ESTÁ EL ID --}}
                                             <td>{{ $estanque->nombre_estanque }}</td>
                                             <td>{{ $estanque->ubicacion }}</td>
                                             <td>{{ $estanque->dimensiones_metros }}</td>

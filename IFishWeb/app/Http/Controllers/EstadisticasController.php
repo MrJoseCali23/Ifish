@@ -18,80 +18,68 @@ class EstadisticasController extends Controller
 
     public function index(Request $request)
     {
-        // --- NUEVO BLOQUE DE VALIDACIÓN Y MANEJO DE FECHAS ---
-
-        // 1. Validación básica del formato y orden de las fechas
+        // --- VALIDACIÓN Y MANEJO DE FECHAS ---
         $request->validate([
             'fecha_inicio' => 'sometimes|nullable|date',
             'fecha_fin' => 'sometimes|nullable|date|after_or_equal:fecha_inicio',
         ]);
-
-        // 2. Definimos nuestros límites (no se puede buscar antes del primer registro ni después de hoy)
-        $primerRegistro = RegistroAlimentacion::orderBy('created_at', 'asc')->first();
-        $fechaMinima = $primerRegistro ? Carbon::parse($primerRegistro->created_at) : Carbon::now();
-        $fechaMaxima = Carbon::now();
-
-        // 3. Obtenemos las fechas del request o usamos valores por defecto (última semana)
-        $fechaFin = $request->filled('fecha_fin')
-                    ? Carbon::parse($request->input('fecha_fin'))
-                    : $fechaMaxima->copy();
-
-        $fechaInicio = $request->filled('fecha_inicio')
-                    ? Carbon::parse($request->input('fecha_inicio'))
-                    : $fechaMaxima->copy()->subWeek();
-
-        // 4. Aplicamos nuestras reglas personalizadas para corregir las fechas
-        if ($fechaFin->isFuture()) {
-            $fechaFin = $fechaMaxima->copy(); // Si es futura, la seteamos a hoy
-        }
-        if ($fechaInicio->lessThan($fechaMinima)) {
-            $fechaInicio = $fechaMinima->copy(); // Si es muy antigua, la seteamos a la fecha mínima
-        }
-
-        // --- FIN DEL BLOQUE DE VALIDACIÓN ---
+        $hoy = Carbon::today();
+        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $hoy->copy()->subWeek();
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : $hoy->copy();
+        if ($fechaFin->isFuture()) { $fechaFin = $hoy->copy(); }
 
 
-        // --- CÁLCULOS (usan las fechas ya validadas y corregidas) ---
+        // --- CÁLCULO DE KPIS Y ESTADÍSTICAS ---
 
-        // Total de Alimentaciones en el rango de fechas validado
-        $totalAlimentacionesRango = RegistroAlimentacion::whereBetween(DB::raw('DATE(created_at)'), [$fechaInicio, $fechaFin])->count();
+        // 1. "Dispensador a Rellenar"
+        $dispensadorARellenar = Dispensador::orderBy('nivel_comida_actual_kg', 'asc')->first();
 
-        // El resto de tus cálculos...
-        $totalProgramadoHoyKg = HorarioAlimentacion::where('activo', true)->sum('cantidad_gramos') / 1000;
-        $dispensadorNivelBajo = Dispensador::orderBy('nivel_comida_actual_kg', 'asc')->first();
+        // 2. "Almacenamiento de los dispensadores"
         $inventarioTotalKg = Dispensador::sum('nivel_comida_actual_kg');
+        $totalProgramadoHoyKg = HorarioAlimentacion::where('activo', true)->sum('cantidad_gramos') / 1000;
         $diasRestantes = ($totalProgramadoHoyKg > 0) ? floor($inventarioTotalKg / $totalProgramadoHoyKg) : '∞';
 
+        // 3. "Plan Cumplido Hoy (%)"
+        $totalDispensadoProgramadoHoy = RegistroAlimentacion::where('tipo_alimentacion', 'Programada')
+            ->whereDate('created_at', $hoy)
+            ->sum('cantidad_dispensada_gramos') / 1000;
+        $planCumplidoHoy = ($totalProgramadoHoyKg > 0)
+                        ? round(($totalDispensadoProgramadoHoy / $totalProgramadoHoyKg) * 100)
+                        : 100; // Si no hay nada programado, se cumplió al 100%
+
+        // 4. "Alimentaciones Manuales y Automáticas (Hoy)"
+        $alimentacionesHoy = RegistroAlimentacion::whereDate('created_at', $hoy)
+            ->select('tipo_alimentacion', DB::raw('count(*) as total'))
+            ->groupBy('tipo_alimentacion')
+            ->pluck('total', 'tipo_alimentacion');
+        $manualesHoy = $alimentacionesHoy->get('Manual', 0);
+        $programadasHoy = $alimentacionesHoy->get('Programada', 0);
+
+
+        // --- DATOS PARA EL GRÁFICO (CON RANGO DE BÚSQUEDA) ---
+
+        // 5. "Comida gastada con rango de búsqueda"
         $consumoDiario = RegistroAlimentacion::query()
             ->select(DB::raw('DATE(created_at) as fecha'), DB::raw('SUM(cantidad_dispensada_gramos) as total_gramos'))
-            ->whereBetween('created_at', [Carbon::now()->subDays(6), Carbon::now()]) // Siempre los últimos 7 días
+            ->whereBetween('created_at', [$fechaInicio, $fechaFin->copy()->endOfDay()])
             ->groupBy('fecha')->orderBy('fecha', 'asc')->get();
 
         $labelsConsumo = $consumoDiario->map(fn($item) => Carbon::parse($item->fecha)->format('d/m'));
-        $dataConsumo = $consumoDiario->map(fn($item) => $item->total_gramos / 1000);
-
-        $cargaPorDispensador = HorarioAlimentacion::query()
-            ->join('Dispensadores', 'Horarios_Alimentacion.id_dispensador', '=', 'Dispensadores.id_dispensador')
-            ->select('Dispensadores.mac_address', DB::raw('SUM(Horarios_Alimentacion.cantidad_gramos) as total_gramos'))
-            ->where('Horarios_Alimentacion.activo', true)->groupBy('Dispensadores.mac_address')
-            ->orderBy('total_gramos', 'desc')->get();
-
-        $labelsCarga = $cargaPorDispensador->pluck('mac_address');
-        $dataCarga = $cargaPorDispensador->map(fn($item) => $item->total_gramos / 1000);
+        $dataConsumo = $consumoDiario->map(fn($item) => $item->total_gramos / 1000); // En Kg
 
 
         // --- PASAR TODOS LOS DATOS A LA VISTA ---
         return view('public.estadisticas.index', [
-            'totalProgramadoHoyKg' => $totalProgramadoHoyKg,
-            'dispensadorNivelBajo' => $dispensadorNivelBajo,
+            'dispensadorARellenar' => $dispensadorARellenar,
+            'inventarioTotalKg' => $inventarioTotalKg,
             'diasRestantes' => $diasRestantes,
-            'totalAlimentacionesRango' => $totalAlimentacionesRango,
-            'fechaInicio' => $fechaInicio->toDateString(), // Pasamos las fechas corregidas a la vista
-            'fechaFin' => $fechaFin->toDateString(),
+            'planCumplidoHoy' => $planCumplidoHoy,
+            'manualesHoy' => $manualesHoy,
+            'programadasHoy' => $programadasHoy,
             'labelsConsumo' => $labelsConsumo,
             'dataConsumo' => $dataConsumo,
-            'labelsCarga' => $labelsCarga,
-            'dataCarga' => $dataCarga,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
         ]);
     }
 }
