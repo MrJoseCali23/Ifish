@@ -5,14 +5,17 @@ namespace App\Http\Middleware;
 use Illuminate\Http\Middleware\TrustProxies as Middleware;
 use Illuminate\Http\Request;
 
+// app/Http/Middleware/TrustProxies.php
 class TrustProxies extends Middleware
 {
     /**
      * The trusted proxies for this application.
      *
-     * @var array<int, string>|string|null
+     * @var array|string|null
      */
-    protected $proxies;
+    // Confiar en todos los proxies que nos envíen peticiones.
+    // Para DigitalOcean App Platform, esta es la configuración más sencilla y efectiva.
+    protected $proxies = '*';
 
     /**
      * The headers that should be used to detect proxies.
