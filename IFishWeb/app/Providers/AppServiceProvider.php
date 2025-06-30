@@ -21,8 +21,13 @@ class AppServiceProvider extends ServiceProvider
      *
      * @return void
      */
+    // app/Providers/AppServiceProvider.php
+
     public function boot()
     {
-        //
+        // ▼▼▼ AÑADE ESTE BLOQUE DE CÓDIGO ▼▼▼
+        if ($this->app->environment('production')) {
+            URL::forceScheme('https');
+        }
     }
 }
