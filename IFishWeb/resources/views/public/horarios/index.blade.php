@@ -4,7 +4,6 @@
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
         <h2 class="text-primary fw-bold">Programación de Horarios por Dispensador</h2>
-        {{-- Este botón lo modificaremos en la siguiente fase --}}
         <a href="{{ route('horarios.create') }}" class="btn btn-success">
             <i class="bi bi-plus-circle me-1"></i> Nuevo Horario
         </a>
@@ -25,7 +24,12 @@
                         <div class="w-100 d-flex justify-content-between align-items-center pe-3">
                             <span>
                                 <i class="bi bi-cpu-fill me-2"></i>
-                                <strong>Dispensador: <code>{{ $dispensador->mac_address }}</code></strong>
+                                
+                                {{-- ▼▼▼ AQUÍ ESTÁ EL CAMBIO ▼▼▼ --}}
+                                <strong>Dispensador: {{ $dispensador->modelo ?? 'Sin Modelo' }}</strong>
+                                <code class="ms-2 small text-muted">({{ $dispensador->mac_address }})</code>
+                                {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
+                                
                                 <small class="text-muted ms-2">(Estanque: {{ $dispensador->estanque->nombre_estanque }})</small>
                             </span>
                             <span class="badge bg-primary rounded-pill">{{ $dispensador->horarios->count() }} horarios</span>
@@ -34,7 +38,6 @@
                 </h2>
                 <div id="collapse{{ $dispensador->id_dispensador }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ $dispensador->id_dispensador }}">
                     <div class="accordion-body">
-                        {{-- Aquí dentro reutilizamos nuestro diseño de tarjetas de horarios --}}
                         <div class="row g-3">
                             @foreach ($dispensador->horarios as $horario)
                                 <div class="col-12 col-md-6 col-lg-4">

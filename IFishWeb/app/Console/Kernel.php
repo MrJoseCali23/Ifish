@@ -21,6 +21,8 @@ class Kernel extends ConsoleKernel
 
         // AÑADE ESTA LÍNEA:
         $schedule->command('ifish:check-feedings')->everyMinute();
+        $schedule->command('ifish:check-expiry')->daily(); // Se ejecutará una vez al día
+
     }
 
     /**

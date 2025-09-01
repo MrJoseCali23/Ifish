@@ -4,7 +4,12 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">Gestión de Estanques</h2>
+        <h2 class="text-primary fw-bold">
+            Gestión de Estanques
+            @if(Auth::user()->criadero)
+                <small class="text-muted fs-5">/ {{ Auth::user()->criadero->nombre }}</small>
+            @endif
+        </h2>
         <a href="{{ route('estanques.create') }}" class="btn btn-success">
             <i class="bi bi-plus-circle me-1"></i> Nuevo Estanque
         </a>
@@ -43,18 +48,27 @@
                                             
                                             {{-- CÓDIGO DE LOS BOTONES AÑADIDO AQUÍ --}}
                                             <td class="text-end">
-                                                <a href="{{ route('estanques.edit', $estanque) }}" class="btn btn-sm btn-warning" title="Editar">
-                                                    <i class="bi bi-pencil-square"></i>
-                                                </a>
-                                                <form action="{{ route('estanques.destroy', $estanque) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este estanque? Perderás todos los datos asociados.');">
-                                                    @csrf
-                                                    @method('DELETE')
-                                                    <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
-                                                        <i class="bi bi-trash"></i>
-                                                    </button>
-                                                </form>
-                                            </td>
+    
+                                                {{-- El botón de Editar solo se mostrará si el usuario tiene el permiso 'update' --}}
+                                                {{-- que definimos en la EstanquePolicy. --}}
+                                                @can('update', $estanque)
+                                                    <a href="{{ route('estanques.edit', $estanque) }}" class="btn btn-sm btn-warning" title="Editar">
+                                                        <i class="bi bi-pencil-square"></i>
+                                                    </a>
+                                                @endcan
 
+                                                {{-- El botón de Eliminar solo se mostrará si el usuario tiene el permiso 'delete' --}}
+                                                @can('delete', $estanque)
+                                                    <form action="{{ route('estanques.destroy', $estanque) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este estanque? Perderás todos los datos asociados.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                    </form>
+                                                @endcan
+
+                                            </td>
                                         </tr>
                                     @empty
                                         <tr>

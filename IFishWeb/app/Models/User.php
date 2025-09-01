@@ -22,8 +22,12 @@ class User extends Authenticatable
     'email',
     'password',
     'rol',
+    'criadero_id', 
 ];
-
+    public function criadero()
+    {
+        return $this->belongsTo(Criadero::class, 'criadero_id');
+    }
     /**
      * The attributes that should be hidden for serialization.
      *

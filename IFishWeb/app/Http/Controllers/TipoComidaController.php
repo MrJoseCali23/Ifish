@@ -35,20 +35,15 @@ class TipoComidaController extends Controller
      * @param  \Illuminate\Http\Request  $request
      * @return \Illuminate\Http\Response
      */
-    public function store(Request $request)
+        public function store(Request $request)
     {
-        // 1. VALIDACIÓN DE DATOS
-        $request->validate([
-            // unique:Tipos_Comida,nombre_comida -> El nombre debe ser único en la tabla Tipos_Comida
-            'nombre_comida' => 'required|string|max:100|unique:Tipos_Comida,nombre_comida',
-            'descripcion' => 'nullable|string',
-            'proveedor' => 'nullable|string|max:100',
-        ]);
+        // ... tu código de validación ...
 
-        // 2. CREACIÓN DEL REGISTRO
-        TipoComida::create($request->all());
+        $data = $request->all();
+        $data['criadero_id'] = Auth::user()->criadero_id; // <-- LÍNEA CLAVE AÑADIDA
 
-        // 3. REDIRECCIÓN CON MENSAJE DE ÉXITO
+        TipoComida::create($data);
+
         return redirect()->route('tipos_comida.index')->with('success', '¡Tipo de comida creado exitosamente!');
     }
 

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use App\Scopes\CriaderoScope;
 
 class TipoComida extends Model
 {
@@ -32,5 +33,17 @@ class TipoComida extends Model
         'nombre_comida',
         'descripcion',
         'proveedor',
+        'nombre_comida',
+        'descripcion',
+        'proveedor',
+        'criadero_id',
     ];
+    public function criadero()
+    {
+        return $this->belongsTo(Criadero::class, 'criadero_id');
+    }
+    protected static function booted()
+    {
+        static::addGlobalScope(new CriaderoScope);
+    }
 }

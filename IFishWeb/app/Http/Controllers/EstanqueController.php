@@ -45,26 +45,19 @@ class EstanqueController extends Controller
 /**
  * Store a newly created resource in storage.
  */
-    public function store(Request $request)
+        public function store(Request $request)
     {
-        // 1. VALIDACIÓN DE DATOS
-        $request->validate([
-            'nombre_estanque' => 'required|string|max:100',
-            'ubicacion' => 'nullable|string|max:255',
-            'dimensiones_metros' => 'nullable|string|max:50',
-        ]);
-
-        // 2. CREACIÓN DEL ESTANQUE
+        // ... tu código de validación ...
+        $this->authorize('create', Estanque::class);
         Estanque::create([
             'nombre_estanque' => $request->nombre_estanque,
             'ubicacion' => $request->ubicacion,
             'dimensiones_metros' => $request->dimensiones_metros ?? 'No especificado',
-            // Asignamos el ID del usuario actualmente autenticado
             'creado_por_usuario' => Auth::id(),
-            'actualizado_por_usuario' => Auth::id(), // Al crear, el creador y el actualizador son el mismo
+            'actualizado_por_usuario' => Auth::id(),
+            'criadero_id' => Auth::user()->criadero_id, // <-- LÍNEA CLAVE AÑADIDA
         ]);
 
-        // 3. REDIRECCIÓN CON MENSAJE DE ÉXITO
         return redirect()->route('estanques.index')->with('success', '¡Estanque creado exitosamente!');
     }
 
@@ -100,7 +93,8 @@ class EstanqueController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function update(Request $request, Estanque $estanque)
-    {
+    {   
+        $this->authorize('update', $estanque);
         // 1. VALIDACIÓN DE DATOS
         $request->validate([
             'nombre_estanque' => 'required|string|max:100',
@@ -131,7 +125,8 @@ class EstanqueController extends Controller
      * @return \Illuminate\Http\Response
      */
     public function destroy(Estanque $estanque)
-    {
+    {   
+         $this->authorize('delete', $estanque);
         // 1. ELIMINAMOS EL REGISTRO DE LA BASE DE DATOS
         $estanque->delete();
 

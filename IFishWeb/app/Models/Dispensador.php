@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HorarioAlimentacion;
 use App\Models\RegistroAlimentacion;
+use App\Scopes\CriaderoScope;
 class Dispensador extends Model
 {
     use HasFactory;
@@ -32,7 +33,13 @@ class Dispensador extends Model
         'estado',
         'nivel_comida_actual_kg',
         'ultimo_reporte',
+        'comando_valor',
+        'criadero_id',
     ];
+    public function criadero()
+    {
+        return $this->belongsTo(Criadero::class, 'criadero_id');
+    }
 
     // --- DEFINICIÓN DE RELACIONES ---
 
@@ -57,5 +64,9 @@ class Dispensador extends Model
     public function registrosAlimentacion()
     {
         return $this->hasMany(RegistroAlimentacion::class, 'id_dispensador', 'id_dispensador');
+    }
+    protected static function booted()
+    {
+        static::addGlobalScope(new CriaderoScope);
     }
 }

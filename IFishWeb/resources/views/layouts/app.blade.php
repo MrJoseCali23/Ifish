@@ -153,8 +153,17 @@
             {{-- Botón dinámico según login --}}
             @auth
                 <div class="d-flex align-items-center gap-3">
-                    <span class="text-success fw-semibold">
-                        <i class="bi bi-person-circle me-1"></i>{{ Auth::user()->name }} ({{ Auth::user()->rol }})
+                    <span class="fw-semibold text-dark">
+                        {{-- Si el usuario tiene un criadero asignado, muestra su nombre --}}
+                        @if(Auth::user()->criadero)
+                            <i class="bi bi-building text-muted"></i>
+                            <strong>{{ Auth::user()->criadero->nombre }}</strong>
+                            <span class="text-muted mx-2">|</span>
+                        @endif
+
+                        {{-- Muestra el nombre y rol del usuario --}}
+                        <i class="bi bi-person-circle text-muted"></i>
+                        {{ Auth::user()->name }} ({{ Auth::user()->rol }})
                     </span>
                     <form method="POST" action="{{ route('logout') }}">
                         @csrf
@@ -164,6 +173,7 @@
                     </form>
                 </div>
             @else
+                {{-- El botón de Iniciar Sesión para visitantes --}}
                 <a href="{{ route('login') }}" class="btn login-btn">
                     <i class="bi bi-box-arrow-in-right me-2"></i>Iniciar sesión
                 </a>

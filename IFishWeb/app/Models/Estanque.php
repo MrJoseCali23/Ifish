@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use App\Models\HorarioAlimentacion;
 use App\Models\Dispensador;
+use App\Scopes\CriaderoScope;
 
 class Estanque extends Model
 {
@@ -24,8 +25,13 @@ class Estanque extends Model
         'dimensiones_metros',
         'creado_por_usuario',
         'actualizado_por_usuario',
+        'tasa_alimentacion_porcentaje',
+        'criadero_id',
     ];
-
+    public function criadero()
+    {
+        return $this->belongsTo(Criadero::class, 'criadero_id');
+    }
     // --- DEFINICIÓN DE RELACIONES ---
 
     /**
@@ -56,5 +62,9 @@ class Estanque extends Model
             'id_estanque',              // Clave local en esta tabla (estanques)
             'id_dispensador'            // Clave local en la tabla intermedia (dispensadores)
         );
+    }
+    protected static function booted()
+    {
+        static::addGlobalScope(new CriaderoScope);
     }
 }

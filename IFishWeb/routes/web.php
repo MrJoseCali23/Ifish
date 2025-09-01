@@ -1,54 +1,83 @@
 <?php
 
-use App\Http\Controllers\ProfileController;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\HomeController;
+use App\Http\Controllers\EstadisticasController;
+use App\Http\Controllers\ReporteController;
+use App\Http\Controllers\EstanqueController;
+use App\Http\Controllers\DispensadorController;
+use App\Http\Controllers\TipoComidaController;
+use App\Http\Controllers\HorarioAlimentacionController;
 use App\Http\Controllers\UsuarioController;
+use App\Http\Controllers\SuperAdmin\CriaderoController;
+use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
 
 /*
 |--------------------------------------------------------------------------
 | Web Routes
 |--------------------------------------------------------------------------
-|
-| Here is where you can register web routes for your application. These
-| routes are loaded by the RouteServiceProvider and all of them will
-| be assigned to the "web" middleware group. Make something great!
-|
 */
 
+// --- RUTAS PÚBLICAS ---
+// Cualquiera puede acceder a estas rutas, sin iniciar sesión.
 Route::get('/', function () {
-    return view('inicio'); // pública
+    return view('inicio');
 });
-// 👇 Ruta pública
-Route::get('/estadisticas', [App\Http\Controllers\EstadisticasController::class, 'index'])->name('estadisticas');
-//Route::view('/estadisticas', 'estadisticas')->name('estadisticas');
 Route::view('/ayuda', 'ayuda')->name('ayuda');
-// Secciones privadas (requieren login)
 
+
+// --- RUTAS DE AUTENTICACIÓN (Login, Registro, etc.) ---
+require __DIR__.'/auth.php';
+
+
+// --- RUTAS PROTEGIDAS (PARA CUALQUIER USUARIO LOGUEADO) ---
 Route::middleware(['auth'])->group(function () {
     Route::view('/dashboard', 'dashboard')->name('dashboard');
-    //Route::view('/estanques', 'estanques')->name('estanques');
-    // La nueva línea que apunta al controlador
-    Route::resource('estanques', App\Http\Controllers\EstanqueController::class);
-    Route::resource('dispensadores', App\Http\Controllers\DispensadorController::class);
 
-    Route::view('/especies', 'especies')->name('especies');
-    Route::view('/arduino', 'arduino')->name('arduino');
-    Route::view('/configuracion', 'configuracion')->name('configuracion');
-
-});
-
-Route::middleware(['auth'])->group(function () {
+    // Perfil del Usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
-    Route::resource('tipos_comida', App\Http\Controllers\TipoComidaController::class);
-    Route::resource('horarios', App\Http\Controllers\HorarioAlimentacionController::class);
-    Route::post('dispensadores/{dispensadore}/alimentar', [App\Http\Controllers\DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
     
-});
-Route::middleware(['auth', 'isadmin'])->group(function () {
-    Route::resource('usuarios', UsuarioController::class);
-    Route::view('/reportes', 'reportes')->name('reportes');
+    // Estadísticas
+    Route::get('/estadisticas', [EstadisticasController::class, 'index'])->name('estadisticas');
+
+    // CRUDs de Operación del Criadero
+    Route::resource('estanques', EstanqueController::class);
+    Route::resource('dispensadores', DispensadorController::class);
+    Route::resource('tipos_comida', TipoComidaController::class);
+    Route::resource('horarios', HorarioAlimentacionController::class);
+    
+    // Acciones personalizadas
+    Route::post('dispensadores/{dispensadore}/alimentar', [DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
+    Route::get('estanques/{estanque}/plan', [EstanqueController::class, 'showPlanForm'])->name('estanques.plan.edit');
+    Route::post('estanques/{estanque}/plan', [EstanqueController::class, 'storePlan'])->name('estanques.plan.store');
+
+    // Grupo de rutas para la sección de Reportes
+    Route::controller(ReporteController::class)->prefix('reportes')->name('reportes.')->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/historial-alimentacion', 'historialAlimentacionForm')->name('historial_alimentacion.form');
+        Route::get('/criaderos', 'reporteCriaderosTabla')->name('criaderos.tabla');
+        Route::get('/criaderos/pdf', 'reporteCriaderosPdf')->name('criaderos.pdf');
+        Route::get('/salud-plataforma', 'reporteSaludPlataforma')->name('salud_plataforma');
+        Route::get('/historial-alimentacion/pdf', 'historialAlimentacionPdf')->name('historial_alimentacion.pdf');
+
+    });
 });
 
-require __DIR__.'/auth.php';
+
+// --- RUTAS PROTEGIDAS (SOLO PARA SUPER ADMIN) ---
+Route::middleware(['auth', 'isadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
+    Route::resource('usuarios', UsuarioController::class);
+    Route::resource('criaderos', CriaderoController::class);
+    Route::resource('dispensadores-inventario', DispensadorInventarioController::class);
+    
+    // Acciones personalizadas de Super Admin
+    Route::get('dispensadores-inventario/{dispensadores_inventario}/historial', [DispensadorInventarioController::class, 'showHistory'])->name('dispensadores-inventario.history');
+    Route::get('dispensadores-archivados', [DispensadorInventarioController::class, 'indexArchivados'])->name('dispensadores-inventario.archivados');
+    Route::post('criaderos/{criadero}/archive', [CriaderoController::class, 'archive'])->name('criaderos.archive');
+    Route::post('criaderos/{criadero}/restore', [CriaderoController::class, 'restore'])->name('criaderos.restore');
+    Route::get('criaderos/{criadero}/assign', [CriaderoController::class, 'showAssignForm'])->name('criaderos.assignForm');
+    Route::post('criaderos/{criadero}/assign', [CriaderoController::class, 'assignDispenser'])->name('criaderos.assign');
+});

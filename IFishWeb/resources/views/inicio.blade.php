@@ -1,20 +1,8 @@
 @extends('layouts.app')
+
 @section('title', 'iFish - Bienvenido a la Acuicultura Inteligente')
 
 @section('content')
-<div class="text-center mb-5">
-</div>
-
-<div class="row justify-content-center">
-    <div class="col-md-6">
-        <div class="card shadow-lg border-0 rounded-4 glass-effect text-center p-4">
-            <h4 class="mb-3"><i class="bi bi-cloud-sun-fill me-2"></i>Clima actual en Colomi</h4>
-            <div id="weather-info" class="fs-5 text-secondary">
-                Cargando clima...
-            </div>
-        </div>
-    </div>
-</div>
     <div class="container py-5">
         {{-- SECCIÓN PRINCIPAL ('HERO') --}}
         <div class="row align-items-center g-5 py-5">
@@ -25,18 +13,19 @@
                 </p>
             </div>
             <div class="col-10 col-sm-8 col-lg-5 mx-auto">
-                @isset($clima)
+                
+                {{-- AQUÍ INTEGRAMOS TU WIDGET DEL CLIMA --}}
                 <div class="card shadow-lg glass-effect">
-                    <div class="card-body text-center">
-                        <h5 class="card-title text-muted">{{ $clima['ciudad'] ?? 'Clima Local' }}</h5>
-                        <div class="display-2 fw-bold my-2">
-                            <i class="bi {{ $clima['icono'] ?? 'bi-thermometer-half' }}"></i>
-                            {{ $clima['temperatura'] ?? 'N/A' }}°C
+                    <div class="card-body text-center p-4">
+                        <h5 class="card-title text-muted mb-3">
+                            <i class="bi bi-geo-alt-fill me-2"></i>Clima actual en Colomi
+                        </h5>
+                        <div id="weather-info" class="fs-4">
+                            Cargando clima... <div class="spinner-border spinner-border-sm" role="status"></div>
                         </div>
-                        <p class="fs-4 text-secondary mb-0">{{ $clima['descripcion'] ?? 'No disponible' }}</p>
                     </div>
                 </div>
-                @endisset
+
             </div>
         </div>
 
@@ -58,43 +47,43 @@
     <div class="container"><footer class="d-flex flex-wrap justify-content-between align-items-center py-3 my-4 border-top"><p class="col-md-4 mb-0 text-muted">&copy; {{ date('Y') }} Proyecto iFish</p><a href="/" class="col-md-4 d-flex align-items-center justify-content-center mb-3 mb-md-0 me-md-auto link-dark text-decoration-none"><img src="{{ asset('images/logo2.png') }}" alt="iFish Logo" style="height: 32px;"></a></footer></div>
 @endsection
 
+
 @push('scripts')
+{{-- TU SCRIPT PARA CARGAR EL CLIMA --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const weatherInfo = document.getElementById('weather-info');
 
-    fetch("{{ route('weather.colomi') }}") // Llama a tu propia ruta de Laravel
+    // Usamos la ruta de la API que ya tienes funcionando
+    fetch("{{ route('weather.colomi') }}")
         .then(response => {
             if (!response.ok) {
-                throw new Error('Network response was not ok ' + response.statusText);
+                throw new Error('La respuesta de la red no fue exitosa');
             }
             return response.json();
         })
     .then(data => {
-        const temp = data.current.temp_c;
+        // Extraemos los datos que necesitamos de la respuesta
+        const temp = Math.round(data.current.temp_c);
         const desc = data.current.condition.text;
-        const icon = "https:" + data.current.condition.icon;
+        const iconUrl = "https:" + data.current.condition.icon;
         const humidity = data.current.humidity;
-        const uv = data.current.uv;
 
-    // --- INICIO DEBUG ---
-    console.log("Valor de 'icon':", icon);
-    console.log("Valor de 'desc':", desc);
-    console.log("Datos de condición de la API:", data.current.condition);
-    // --- FIN DEBUG ---
-
-    weatherInfo.innerHTML = `
-        <img src="${icon}" alt="${desc}" style="height: 48px;" class="mb-2">
-        <div><strong>${temp}°C</strong> – ${desc}</div>
-        <div class="mt-2">💧 <strong>Humedad:</strong> ${humidity}%</div>
-        <div>☀️ <strong>UV:</strong> ${uv}</div>
-    `;
-})
-.catch(error => {
-    console.error('Error en el fetch o procesamiento:', error); // También útil para ver errores de red o JSON
-    weatherInfo.innerText = "No se pudo cargar el clima (error en la solicitud).";
-});
+        // Construimos el HTML para mostrar los datos
+        weatherInfo.innerHTML = `
+            <div class="display-4 fw-bold">
+                <img src="${iconUrl}" alt="${desc}" style="height: 64px;">
+                ${temp}°C
+            </div>
+            <div class="fs-5 text-secondary mt-2">${desc}</div>
+            <div class="mt-2 text-muted"><i class="bi bi-droplet-fill"></i> Humedad: ${humidity}%</div>
+        `;
+    })
+    .catch(error => {
+        // Si algo falla, mostramos un mensaje de error amigable
+        console.error('Error al obtener el clima:', error);
+        weatherInfo.innerText = "No se pudo cargar el clima.";
+    });
 });
 </script>
-
 @endpush

@@ -21,8 +21,9 @@ return new class extends Migration
 
             // TU SQL: FOREIGN KEY (id_estanque) REFERENCES Estanques(id_estanque) ON DELETE CASCADE
             $table->foreignId('id_estanque')
+                ->nullable()
                 ->constrained('Estanques', 'id_estanque')
-                ->onDelete('cascade');
+                ->onDelete('set null');
 
             // TU SQL: mac_address VARCHAR(17) UNIQUE NOT NULL
             $table->string('mac_address', 17)->unique();
