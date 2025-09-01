@@ -20,10 +20,15 @@
             <i class="bi bi-people-fill"></i>
             <span>Gestionar Usuarios</span>
         </a>
-        <a class="nav-link @if(request()->routeIs('superadmin.dispensadores-inventario.*')) active @endif" href="{{ route('superadmin.dispensadores-inventario.index') }}">
+        
+        {{-- ▼▼▼ INICIO DEL CAMBIO ▼▼▼ --}}
+        {{-- Ahora esta condición es mucho más específica y no entrará en conflicto --}}
+        <a class="nav-link @if(request()->routeIs(['superadmin.dispensadores-inventario.index', 'superadmin.dispensadores-inventario.create', 'superadmin.dispensadores-inventario.edit'])) active @endif" href="{{ route('superadmin.dispensadores-inventario.index') }}">
             <i class="bi bi-box-seam-fill"></i>
             <span>Inventario Dispensadores</span>
         </a>
+        {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
+
         <a class="nav-link @if(request()->routeIs('superadmin.dispensadores-inventario.archivados')) active @endif" href="{{ route('superadmin.dispensadores-inventario.archivados') }}">
             <i class="bi bi-archive-fill"></i>
             <span>Dispensadores Archivados</span>
@@ -32,7 +37,6 @@
         <hr class="sidebar-divider my-2"> 
         <div class="sidebar-heading text-white-50 small">SUPERVISIÓN GLOBAL</div>
 
-        {{-- El Super Admin también necesita ver estas secciones para supervisar --}}
         <a class="nav-link @if(request()->routeIs('estadisticas')) active @endif" href="{{ route('estadisticas') }}">
             <i class="bi bi-bar-chart-line"></i>
             <span>Estadísticas Globales</span>
@@ -44,9 +48,9 @@
     @endif
     
     {{-- =============================================================== --}}
-    {{-- MENÚ PARA USUARIOS DE CRIADERO (Dueño y Trabajador) --}}
+    {{-- MENÚ PARA USUARIOS DE CRIADERO (Dueño) --}}
     {{-- =============================================================== --}}
-    @if (in_array(Auth::user()->rol, ['Dueño']))
+    @if (Auth::user()->rol === 'Dueño')
         <hr class="sidebar-divider my-2">
         <div class="sidebar-heading text-white-50 small">MI CRIADERO</div>
 
@@ -70,14 +74,13 @@
             <i class="bi bi-bar-chart-line"></i>
             <span>Estadísticas</span>
         </a>
-        {{-- CORRECCIÓN APLICADA AQUÍ --}}
         <a class="nav-link @if(request()->routeIs('reportes.*')) active @endif" href="{{ route('reportes.index') }}">
             <i class="bi bi-file-earmark-text"></i>
             <span>Reportes</span>
         </a>
     @endif
 
-    {{-- ENLACE FINAL (visible para todos los que iniciaron sesión) --}}
+    {{-- ENLACE FINAL (visible para todos) --}}
     <hr class="sidebar-divider my-2">
     <a class="nav-link @if(request()->routeIs('ayuda')) active @endif" href="{{ route('ayuda') }}">
         <i class="bi bi-question-circle"></i>
