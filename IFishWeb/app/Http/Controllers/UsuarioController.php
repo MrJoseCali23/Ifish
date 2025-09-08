@@ -8,15 +8,26 @@ use Illuminate\Support\Facades\Hash;
 use App\Models\Criadero;
 use Illuminate\Validation\Rules;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 
 class UsuarioController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
-        $usuarios = User::all();
-        return view('usuarios.index', compact('usuarios'));
-    }
+        $status = $request->query('status', 'activos'); // Por defecto, mostramos los activos
 
+        $query = User::with('criadero')->orderBy('name', 'asc');
+
+        if ($status == 'inactivos') {
+            $query->where('estado', 'Inactivo');
+        } else {
+            $query->where('estado', 'Activo');
+        }
+
+        $usuarios = $query->paginate(15)->withQueryString();
+
+        return view('usuarios.index', compact('usuarios', 'status'));
+}
     public function create()
     {
         // Buscamos todos los criaderos para poder listarlos en un menú desplegable.
@@ -106,8 +117,27 @@ class UsuarioController extends Controller
     }
 
     public function destroy(User $usuario)
-    {
-        $usuario->delete();
-        return redirect()->route('usuarios.index')->with('success', 'Usuario eliminado.');
+{
+    // Usamos una transacción para asegurar que ambas operaciones se completen
+    DB::transaction(function () use ($usuario) {
+        
+        // 1. Desactivamos al usuario, como antes
+        $usuario->update(['estado' => 'Inactivo']);
+
+        // 2. ▼▼▼ NUEVA LÓGICA INTELIGENTE ▼▼▼
+        // Si el usuario que estamos desactivando es un 'Dueño' Y tiene un criadero asociado...
+        if ($usuario->rol === 'Dueño' && $usuario->criadero) {
+            // ...entonces también archivamos su criadero.
+            $usuario->criadero->update(['estado' => 'Archivado']);
+        }
+    });
+
+    // Construimos un mensaje de éxito dinámico para el Super Admin
+    $mensaje = "La cuenta del usuario {$usuario->name} ha sido desactivada.";
+    if ($usuario->rol === 'Dueño' && $usuario->criadero) {
+        $mensaje .= " Su criadero también ha sido archivado.";
     }
+
+    return redirect()->route('superadmin.usuarios.index')->with('success', $mensaje);
+}
 }

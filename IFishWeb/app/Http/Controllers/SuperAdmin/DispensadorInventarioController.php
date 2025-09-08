@@ -163,4 +163,15 @@ class DispensadorInventarioController extends Controller
 
         return view('superadmin.dispensadores.archivados', compact('dispensadoresArchivados'));
     }
+    public function showHistory(Dispensador $dispensadores_inventario)
+    {
+        $dispensador = $dispensadores_inventario;
+
+        $eventos = DispensadorEvento::where('dispensador_id', $dispensador->id_dispensador)
+                                    ->with('usuario') // Cargamos la relación con el usuario
+                                    ->latest()      // Ordenamos por el más reciente
+                                    ->paginate(20);
+
+        return view('superadmin.dispensadores.history', compact('dispensador', 'eventos'));
+    }
 }

@@ -56,9 +56,11 @@
                             <span class="badge bg-{{ strtolower($dispensador->estado) == 'activo' ? 'success' : 'secondary' }} ms-2">{{ $dispensador->estado }}</span>
                         </div>
                         <div>
-                             <a href="{{ route('superadmin.dispensadores-inventario.history', $dispensador) }}" class="btn btn-sm btn-info" title="Ver Historial"><i class="bi bi-card-list"></i></a>
-                             <a href="{{ route('superadmin.dispensadores-inventario.edit', $dispensador) }}" class="btn btn-sm btn-warning" title="Editar/Reasignar"><i class="bi bi-pencil-square"></i></a>
-                             <form action="{{ route('superadmin.dispensadores-inventario.destroy', $dispensador) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar dispensador?');"> @csrf @method('DELETE') <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
+                            <a href="{{ route('reportes.historial_dispensador', ['dispensador_id' => $dispensador->id_dispensador]) }}" class="btn btn-sm btn-info" title="Ver Historial">
+                                <i class="bi bi-card-list"></i>
+                            </a>
+                            <a href="{{ route('superadmin.dispensadores-inventario.edit', $dispensador) }}" class="btn btn-sm btn-warning" title="Editar/Reasignar"><i class="bi bi-pencil-square"></i></a>
+                            <form action="{{ route('superadmin.dispensadores-inventario.destroy', $dispensador) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar dispensador?');"> @csrf @method('DELETE') <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button></form>
                         </div>
                     </li>
                 @endforeach

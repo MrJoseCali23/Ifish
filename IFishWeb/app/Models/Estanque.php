@@ -67,4 +67,8 @@ class Estanque extends Model
     {
         static::addGlobalScope(new CriaderoScope);
     }
+    public function dispensadores()
+    {
+        return $this->hasMany(Dispensador::class, 'id_estanque', 'id_estanque');
+    }
 }

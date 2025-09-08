@@ -9,6 +9,7 @@ use App\Models\RegistroAlimentacion;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
+use App\Models\HorarioAlimentacion;
 
 class DispensadorController extends Controller
 {
@@ -99,29 +100,44 @@ class DispensadorController extends Controller
     /**
      * Ejecuta una alimentación manual.
      */
+    // app/Http/Controllers/DispensadorController.php
+
     public function manualFeed(Request $request, Dispensador $dispensadore)
     {
-        // La política de permisos se verifica con un nombre de método personalizado.
         $this->authorize('manualFeed', $dispensadore);
 
-        $request->validate([
-            'id_tipo_comida' => ['required', 'integer', Rule::exists('Tipos_Comida', 'id_tipo_comida')->where('criadero_id', Auth::user()->criadero_id)],
-            'cantidad_dispensada_gramos' => 'required|integer|min:1',
-        ]);
+        // 1. --- LÓGICA PARA INFERIR EL TIPO DE COMIDA ---
+        // Buscamos en los horarios de este dispensador, contamos cuántas veces aparece cada tipo de comida,
+        // y nos quedamos con el más frecuente.
+        $tipoComidaPredominante = HorarioAlimentacion::where('id_dispensador', $dispensadore->id_dispensador)
+            ->select('id_tipo_comida')
+            ->groupBy('id_tipo_comida')
+            ->orderByRaw('COUNT(*) DESC')
+            ->first();
 
+        // Si el dispensador no tiene ningún horario, no podemos inferir la comida.
+        if (!$tipoComidaPredominante) {
+            return back()->with('error', 'No se puede alimentar manualmente. El dispensador necesita tener al menos un horario programado para detectar el tipo de comida.');
+        }
+
+        // 2. --- VALIDACIÓN ---
+        $request->validate(['cantidad_dispensada_gramos' => 'required|integer|min:1']);
+
+        // 3. --- CREACIÓN DEL REGISTRO ---
         RegistroAlimentacion::create([
             'id_dispensador' => $dispensadore->id_dispensador,
-            'id_tipo_comida' => $request->id_tipo_comida,
+            'id_tipo_comida' => $tipoComidaPredominante->id_tipo_comida, // <-- Usamos la comida inferida
             'iniciado_por_usuario' => Auth::id(),
             'cantidad_dispensada_gramos' => $request->cantidad_dispensada_gramos,
             'tipo_alimentacion' => 'Manual',
             'exitoso' => true,
         ]);
 
+        // 4. --- ENVIAR COMANDO AL ESP ---
         $dispensadore->comando_pendiente = 'dispensar';
         $dispensadore->comando_valor = $request->input('cantidad_dispensada_gramos');
         $dispensadore->save();
 
-        return redirect()->route('dispensadores.index')->with('success', '¡Orden de alimentación manual enviada al dispensador!');
+        return redirect()->route('dispensadores.index')->with('success', '¡Orden de alimentación manual enviada!');
     }
 }

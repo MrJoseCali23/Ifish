@@ -4,11 +4,8 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">Gestión de Dispensadores</h2>
+        <h2 class="text-primary fw-bold">🤖 Gestión de Dispensadores</h2>
         
-        {{-- ▼▼▼ CAMBIO DE PERMISOS #1 ▼▼▼ --}}
-        {{-- Este botón solo se mostrará si el usuario tiene permiso para crear. --}}
-        {{-- Según nuestra política, solo el Super Admin puede. --}}
         @can('create', App\Models\Dispensador::class)
         <a href="{{ route('superadmin.dispensadores-inventario.create') }}" class="btn btn-success">
             <i class="bi bi-plus-circle me-1"></i> Nuevo Dispensador
@@ -16,12 +13,21 @@
         @endcan
     </div>
 
+    {{-- ▼▼▼ BLOQUE DE MENSAJES MEJORADO ▼▼▼ --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
+    @if(session('error'))
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            {{ session('error') }}
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+    {{-- ▲▲▲ FIN DEL BLOQUE DE MENSAJES ▲▲▲ --}}
+
 
     <div class="card shadow">
         <div class="card-body">
@@ -32,20 +38,17 @@
                             <div class="card-header d-flex justify-content-between align-items-center bg-light">
                                 <h5 class="card-title mb-0 fw-bold text-primary">
                                     <i class="bi bi-cpu-fill me-2"></i>
-                                    {{-- Mostramos el modelo como título principal --}}
                                     {{ $dispensadore->modelo ?? 'Sin Modelo' }}
                                 </h5>
-                                {{-- Mostramos la MAC address como un dato secundario y más pequeño --}}
                                 <small class="text-muted"><code>{{ $dispensadore->mac_address }}</code></small>
-                                @if($dispensadore->estado == 'Activo') <span class="badge bg-success">{{ $dispensadore->estado }}</span>
-                                @elseif($dispensadore->estado == 'Inactivo') <span class="badge bg-secondary">{{ $dispensadore->estado }}</span>
-                                @else <span class="badge bg-danger">{{ $dispensadore->estado }}</span>
-                                @endif
                             </div>
                             <div class="card-body d-flex flex-column">
                                 <div>
                                     <p class="card-text mb-1"><i class="bi bi-water text-muted me-2"></i><strong>Estanque:</strong> {{ $dispensadore->estanque->nombre_estanque ?? 'No asignado' }}</p>
-                                    <p class="card-text"><i class="bi bi-info-circle text-muted me-2"></i><strong>Modelo:</strong> {{ $dispensadore->modelo ?? 'N/A' }}</p>
+                                    @if($dispensadore->estado == 'Activo') <span class="badge bg-success">{{ $dispensadore->estado }}</span>
+                                    @elseif($dispensadore->estado == 'Inactivo') <span class="badge bg-secondary">{{ $dispensadore->estado }}</span>
+                                    @else <span class="badge bg-danger">{{ $dispensadore->estado }}</span>
+                                    @endif
                                     <div class="mt-3">
                                         <p class="mb-1"><i class="bi bi-clock-history text-muted me-2"></i><strong>Horarios Programados:</strong></p>
                                         @if($dispensadore->horarios_count > 0)
@@ -80,7 +83,6 @@
                                 </div>
                             </div>
                             <div class="card-footer text-end">
-                                {{-- ▼▼▼ CAMBIO DE PERMISOS #2 ▼▼▼ --}}
                                 @can('manualFeed', $dispensadore)
                                     <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#manualFeedModal{{ $dispensadore->id_dispensador }}" title="Alimentación Manual"><i class="bi bi-send-fill"></i></button>
                                 @endcan
@@ -100,7 +102,31 @@
 
                     <!-- Modal para Alimentación Manual -->
                     <div class="modal fade" id="manualFeedModal{{ $dispensadore->id_dispensador }}" tabindex="-1" aria-hidden="true">
-                        {{-- ... Contenido del modal ... --}}
+                        <div class="modal-dialog">
+                            <div class="modal-content">
+                                <div class="modal-header">
+                                    <h5 class="modal-title">Alimentación Manual: {{ $dispensadore->modelo }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <form method="POST" action="{{ route('dispensadores.manualFeed', $dispensadore) }}">
+                                    @csrf
+                                    <div class="modal-body">
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Comida</label>
+                                            <input type="text" class="form-control" value="Detectada de los horarios" readonly>
+                                        </div>
+                                        <div class="mb-3">
+                                            <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">Cantidad a Dispensar (en gramos)</label>
+                                            <input type="number" class="form-control" id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">
+                                        </div>
+                                    </div>
+                                    <div class="modal-footer">
+                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                        <button type="submit" class="btn btn-primary">Dispensar Manualmente</button>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
                     </div>
                 @empty
                     <div class="col-12"><div class="alert alert-info text-center">No tienes dispensadores asignados a tu criadero.</div></div>

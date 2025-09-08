@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 use App\Models\Estanque;
 use Illuminate\Support\Facades\Auth;
-
+use App\Models\HorarioAlimentacion; 
+use App\Models\TipoComida;
 use Illuminate\Http\Request;
-
+use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 class EstanqueController extends Controller
 {
     /**
@@ -133,4 +135,5 @@ class EstanqueController extends Controller
         // 2. REDIRIGIMOS A LA LISTA CON UN MENSAJE DE ÉXITO
         return redirect()->route('estanques.index')->with('success', 'Estanque eliminado exitosamente.');
     }
+
 }

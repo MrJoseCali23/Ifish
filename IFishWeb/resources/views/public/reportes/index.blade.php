@@ -49,6 +49,18 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <div class="text-primary fs-2 mb-3"><i class="bi bi-card-list"></i></div>
+                        <h5 class="card-title">Historial de Dispensadores</h5>
+                        <p class="card-text text-muted">Audita la "hoja de vida" completa de cada dispensador: asignaciones, mantenimientos, etc.</p>
+                        <div class="mt-auto">
+                            <a href="{{ route('reportes.historial_dispensador') }}" class="btn btn-primary">Generar Reporte</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endif
 
     </div>

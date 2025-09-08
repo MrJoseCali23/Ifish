@@ -67,7 +67,6 @@
                                                         </button>
                                                     </form>
                                                 @endcan
-
                                             </td>
                                         </tr>
                                     @empty

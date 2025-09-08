@@ -62,6 +62,7 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/criaderos/pdf', 'reporteCriaderosPdf')->name('criaderos.pdf');
         Route::get('/salud-plataforma', 'reporteSaludPlataforma')->name('salud_plataforma');
         Route::get('/historial-alimentacion/pdf', 'historialAlimentacionPdf')->name('historial_alimentacion.pdf');
+        Route::get('/historial-dispensador', 'reporteHistorialDispensador')->name('historial_dispensador');
 
     });
 });
@@ -80,4 +81,6 @@ Route::middleware(['auth', 'isadmin'])->prefix('superadmin')->name('superadmin.'
     Route::post('criaderos/{criadero}/restore', [CriaderoController::class, 'restore'])->name('criaderos.restore');
     Route::get('criaderos/{criadero}/assign', [CriaderoController::class, 'showAssignForm'])->name('criaderos.assignForm');
     Route::post('criaderos/{criadero}/assign', [CriaderoController::class, 'assignDispenser'])->name('criaderos.assign');
+    Route::get('dispensadores-inventario/{dispensadores_inventario}/historial', [DispensadorInventarioController::class, 'showHistory'])->name('dispensadores-inventario.history');
+    Route::post('criaderos/{criadero}/restore', [CriaderoController::class, 'restore'])->name('criaderos.restore');
 });

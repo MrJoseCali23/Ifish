@@ -44,4 +44,9 @@
             </div>
         </div>
     </div>
+    <div class="mt-4">
+        <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left"></i> Volver a la Central de Reportes
+        </a>
+    </div>
 @endsection

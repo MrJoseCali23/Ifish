@@ -196,4 +196,34 @@ class ReporteController extends Controller
         // 3. Devolvemos el PDF para que se descargue en el navegador
         return $pdf->download('historial-alimentacion-' . date('Y-m-d') . '.pdf');
     }
+    // app/Http/Controllers/ReporteController.php
+
+/**
+ * Muestra el reporte con el historial de eventos de los dispensadores.
+ */
+    public function reporteHistorialDispensador(Request $request)
+    {
+        // Solo el Super Admin puede ver este reporte.
+        abort_if(Auth::user()->rol !== 'Admin', 403, 'Acción no autorizada.');
+
+        $query = \App\Models\DispensadorEvento::with(['dispensador', 'usuario']);
+
+        // --- Aplicamos los filtros ---
+        if ($request->filled('dispensador_id')) {
+            $query->where('dispensador_id', $request->dispensador_id);
+        }
+        if ($request->filled('fecha_inicio')) {
+            $query->whereDate('created_at', '>=', $request->fecha_inicio);
+        }
+        if ($request->filled('fecha_fin')) {
+            $query->whereDate('created_at', '<=', $request->fecha_fin);
+        }
+
+        $eventos = $query->latest()->paginate(20)->withQueryString();
+
+        // Obtenemos todos los dispensadores para el menú del filtro
+        $dispensadores = \App\Models\Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)->orderBy('modelo')->get();
+
+        return view('public.reportes.historial_dispensador', compact('eventos', 'dispensadores', 'request'));
+    }
 }

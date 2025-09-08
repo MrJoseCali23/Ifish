@@ -34,32 +34,29 @@ class CriaderoController extends Controller
     {
         DB::transaction(function () use ($criadero) {
             // 1. Archivamos el criadero
-            $criadero->update([
-                'estado' => 'Archivado',
-                'archivado_at' => now(), // Suponiendo que añadimos esta columna
-            ]);
+            $criadero->update(['estado' => 'Archivado']);
 
-            // 2. Ponemos todos sus dispensadores como 'Inactivo'
-            $criadero->dispensadores()->update(['estado' => 'Inactivo']);
+            // 2. Desactivamos a TODOS sus usuarios asociados
+            $criadero->users()->update(['estado' => 'Inactivo']);
         });
 
-        return redirect()->route('superadmin.criaderos.index')->with('success', "El criadero '{$criadero->nombre}' y sus dispensadores han sido archivados.");
+        return redirect()->route('superadmin.criaderos.index')->with('success', "El criadero '{$criadero->nombre}' y todos sus usuarios han sido archivados.");
     }
 
-    public function restore(Criadero $criadero)
+   public function restore(Criadero $criadero)
     {
         DB::transaction(function () use ($criadero) {
             // 1. Restauramos el criadero
-            $criadero->update([
-                'estado' => 'Activo',
-                'archivado_at' => null,
-            ]);
+            $criadero->update(['estado' => 'Activo']);
 
-            // 2. Volvemos a poner sus dispensadores como 'Activo'
-            $criadero->dispensadores()->update(['estado' => 'Activo']);
+            // 2. Reactivamos SOLAMENTE al usuario dueño.
+            // Los trabajadores pueden ser reactivados manualmente.
+            if ($criadero->owner) {
+                $criadero->owner->update(['estado' => 'Activo']);
+            }
         });
-        
-        return redirect()->route('superadmin.criaderos.index', ['status' => 'archivados'])->with('success', "El criadero '{$criadero->nombre}' y sus dispensadores han sido restaurados.");
+
+        return redirect()->route('superadmin.criaderos.index', ['status' => 'archivados'])->with('success', "El criadero '{$criadero->nombre}' y su dueño han sido restaurados.");
     }
     public function create()
     {

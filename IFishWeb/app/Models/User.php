@@ -23,6 +23,7 @@ class User extends Authenticatable
     'password',
     'rol',
     'criadero_id', 
+    'estado',
 ];
     public function criadero()
     {
