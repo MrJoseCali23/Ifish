@@ -3,7 +3,7 @@
 @section('title', 'Editar Estanque - iFish')
 
 @section('content')
-    <h2 class="text-primary fw-bold">✏️ Editando Estanque: {{ $estanque->nombre_estanque }}</h2>
+    <h2 class="text-primary fw-bold">Editando Estanque: {{ $estanque->nombre_estanque }}</h2>
 
     <div class="card shadow glass-effect mt-4">
         <div class="card-body">

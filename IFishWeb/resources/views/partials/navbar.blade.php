@@ -21,13 +21,11 @@
             <span>Gestionar Usuarios</span>
         </a>
         
-        {{-- ▼▼▼ INICIO DEL CAMBIO ▼▼▼ --}}
         {{-- Ahora esta condición es mucho más específica y no entrará en conflicto --}}
         <a class="nav-link @if(request()->routeIs(['superadmin.dispensadores-inventario.index', 'superadmin.dispensadores-inventario.create', 'superadmin.dispensadores-inventario.edit'])) active @endif" href="{{ route('superadmin.dispensadores-inventario.index') }}">
             <i class="bi bi-box-seam-fill"></i>
             <span>Inventario Dispensadores</span>
         </a>
-        {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
 
         <a class="nav-link @if(request()->routeIs('superadmin.dispensadores-inventario.archivados')) active @endif" href="{{ route('superadmin.dispensadores-inventario.archivados') }}">
             <i class="bi bi-archive-fill"></i>
@@ -80,10 +78,12 @@
         </a>
     @endif
 
+@endauth
+
     {{-- ENLACE FINAL (visible para todos) --}}
     <hr class="sidebar-divider my-2">
     <a class="nav-link @if(request()->routeIs('ayuda')) active @endif" href="{{ route('ayuda') }}">
         <i class="bi bi-question-circle"></i>
         <span>Ayuda</span>
     </a>
-@endauth
+    

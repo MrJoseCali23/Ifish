@@ -19,9 +19,11 @@
                         <select class="form-select @error('id_dispensador') is-invalid @enderror" id="id_dispensador" name="id_dispensador" required>
                             <option value="" disabled selected>Selecciona un dispensador...</option>
                             @foreach ($dispensadores as $dispensador)
+                                {{-- ▼▼▼ AQUÍ ESTÁ EL CAMBIO ▼▼▼ --}}
                                 <option value="{{ $dispensador->id_dispensador }}" {{ old('id_dispensador') == $dispensador->id_dispensador ? 'selected' : '' }}>
-                                    MAC: {{ $dispensador->mac_address }} (Estanque: {{ $dispensador->estanque->nombre_estanque ?? 'N/A' }})
+                                    {{ $dispensador->modelo ?? 'Sin Modelo' }} (Estanque: {{ $dispensador->estanque->nombre_estanque ?? 'N/A' }})
                                 </option>
+                                {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
                             @endforeach
                         </select>
                         @error('id_dispensador') <div class="invalid-feedback">{{ $message }}</div> @enderror

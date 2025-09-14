@@ -63,8 +63,9 @@ class DispensadorPolicy
      */
     public function delete(User $user, Dispensador $dispensador): bool
     {
-        // Solo un Dueño puede eliminar un dispensador de su criadero.
-        return $user->rol === 'Dueño' && $user->criadero_id === $dispensador->criadero_id;
+        // Solo el Super Admin puede eliminar dispensadores. El 'before' se encarga de darle
+        // permiso. Para todos los demás (Dueños), devolvemos 'false'.
+        return false;
     }
     
     /**

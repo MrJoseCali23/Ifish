@@ -16,10 +16,6 @@ class HorarioAlimentacionController extends Controller
      */
     public function index()
     {
-        // Obtenemos TODOS los dispensadores que tienen al menos UN horario programado.
-        // Usamos with() para cargar de antemano todas las relaciones que vamos a necesitar
-        // en la vista (estanque, horarios, y el tipo de comida de cada horario).
-        // Esto es súper eficiente.
         $dispensadoresConHorarios = Dispensador::whereHas('horarios')
                                     ->with([
                                         'estanque', 
@@ -39,12 +35,17 @@ class HorarioAlimentacionController extends Controller
      */
     public function create()
     {
-        // 1. Obtenemos todos los dispensadores disponibles.
-        $dispensadores = Dispensador::all();
-        // 2. Obtenemos todos los tipos de comida disponibles.
+        // Usamos with('estanque') para cargar la relación de forma eficiente (Eager Loading).
+        // También filtramos para mostrar solo los dispensadores que SÍ están asignados a un estanque.
+        $dispensadores = Dispensador::with('estanque')->whereNotNull('id_estanque')->get();
+        
+        if ($dispensadores->isEmpty()) {
+            return redirect()->route('horarios.index')
+                             ->with('error', 'No se pueden crear horarios. Primero debe asignar un dispensador a un estanque desde el panel de dispensadores.');
+        }
+
         $tipos_comida = TipoComida::all();
 
-        // 3. Retornamos la vista y le pasamos ambas colecciones de datos.
         return view('public.horarios.create', compact('dispensadores', 'tipos_comida'));
     }
 

@@ -1,7 +1,11 @@
 @extends('layouts.app')
 @section('title', 'Editar Dispensador')
 @section('content')
-    <h2 class="text-primary fw-bold">Gestionar Dispensador: <code>{{ $dispensadore->mac_address }}</code></h2>
+    {{-- ▼▼▼ TÍTULO ACTUALIZADO ▼▼▼ --}}
+    <h2 class="text-primary fw-bold">Gestionar Dispensador: <span class="text-dark">{{ $dispensadore->modelo ?? 'Sin Modelo' }}</span></h2>
+    <p class="text-muted"><code>{{ $dispensadore->mac_address }}</code></p>
+    {{-- ▲▲▲ FIN DEL TÍTULO ▲▲▲ --}}
+
     @if ($errors->any())
     <div class="alert alert-danger mt-3">
         <strong>¡Ups! Hubo algunos problemas:</strong>
@@ -11,8 +15,9 @@
             @endforeach
         </ul>
     </div>
-@endif
-    <p class="text-muted">Desde aquí puedes asignar el dispensador a un estanque o cambiar su estado operativo.</p>
+    @endif
+    
+    <p class="text-muted mt-3">Desde aquí puedes asignar el dispensador a un estanque o cambiar su estado operativo.</p>
     
     <div class="card shadow-sm mt-4">
         <div class="card-body">
@@ -20,7 +25,7 @@
                 @csrf
                 @method('PUT')
                 
-                {{-- CAMPOS DE SOLO LECTURA --}}
+                {{-- CAMPOS DE SOLO LECTURA (ya estaban correctos) --}}
                 <div class="row mb-3">
                     <div class="col-md-6">
                         <label class="form-label">MAC Address</label>

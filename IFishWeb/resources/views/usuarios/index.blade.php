@@ -2,7 +2,7 @@
 @section('title', 'Super Admin: Gestión de Usuarios')
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">👥 Gestión de Usuarios</h2>
+        <h2 class="text-primary fw-bold">Gestión de Usuarios</h2>
         <a href="{{ route('superadmin.usuarios.create') }}" class="btn btn-success"><i class="bi bi-person-plus me-1"></i> Nuevo Usuario</a>
     </div>
 
