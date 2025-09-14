@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 use App\Models\TipoComida;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 class TipoComidaController extends Controller
 {
     /**
