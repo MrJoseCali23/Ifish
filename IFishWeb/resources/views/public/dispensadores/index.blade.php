@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">Gestión de Dispensadores</h2>
+        <h2 class="text-primary fw-bold">🤖 Gestión de Dispensadores</h2>
         
         @can('create', App\Models\Dispensador::class)
         <a href="{{ route('superadmin.dispensadores-inventario.create') }}" class="btn btn-success">
@@ -13,7 +13,6 @@
         @endcan
     </div>
 
-    {{-- ▼▼▼ BLOQUE DE MENSAJES MEJORADO ▼▼▼ --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -26,7 +25,6 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     @endif
-    {{-- ▲▲▲ FIN DEL BLOQUE DE MENSAJES ▲▲▲ --}}
 
 
     <div class="card shadow">
@@ -111,10 +109,12 @@
                                 <form method="POST" action="{{ route('dispensadores.manualFeed', $dispensadore) }}">
                                     @csrf
                                     <div class="modal-body">
-                                        <div class="mb-3">
-                                            <label class="form-label">Tipo de Comida</label>
-                                            <input type="text" class="form-control" value="Detectada de los horarios" readonly>
-                                        </div>
+                                        <!-- <div class="mb-3">
+                                            <label class="form-label" >Tipo de Comida Cargada: {{ $dispensadore->id_tipo_comida->nombre_comida ?? 'No asignada' }}</label>
+                                            <input type="text" class="form-control" 
+                                                   value="{{ $dispensadore->tipoComida->nombre_comida ?? 'No asignada' }}" readonly>
+                                        </div> -->
+                                        {{-- ▲▲▲ FIN DEL BLOQUE ACTUALIZADO ▲▲▲ --}}
                                         <div class="mb-3">
                                             <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">Cantidad a Dispensar (en gramos)</label>
                                             <input type="number" class="form-control" id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">

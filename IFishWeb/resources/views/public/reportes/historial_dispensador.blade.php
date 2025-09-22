@@ -22,11 +22,10 @@
         <div class="card-body">
             <div class="table-responsive">
                 <table class="table table-striped">
-                    {{-- ▼▼▼ INICIO DEL CÓDIGO QUE FALTABA ▼▼▼ --}}
                     <thead class="table-light">
                         <tr>
                             <th>Fecha y Hora</th>
-                            <th>Tipo de Evento</th>
+                            <th>Dispensador</th> 
                             <th>Descripción</th>
                             <th>Realizado por</th>
                         </tr>
@@ -35,17 +34,22 @@
                         @forelse ($eventos as $evento)
                             <tr>
                                 <td>{{ $evento->created_at->format('d/m/Y H:i:s') }}</td>
+                                {{-- Mostramos el modelo y la MAC del dispensador asociado al evento --}}
+                                <td>
+                                    <strong>{{ $evento->dispensador->modelo ?? 'N/A' }}</strong><br>
+                                    <code class="small">{{ $evento->dispensador->mac_address ?? '' }}</code>
+                                </td>
                                 <td><span class="badge bg-secondary">{{ str_replace('_', ' ', Str::title($evento->tipo_evento)) }}</span></td>
                                 <td>{{ $evento->descripcion }}</td>
                                 <td>{{ $evento->usuario->name ?? 'Sistema' }}</td>
                             </tr>
                         @empty
                             <tr>
-                                <td colspan="4" class="text-center">No se encontraron eventos con los filtros seleccionados.</td>
+                                <td colspan="5" class="text-center">No se encontraron eventos con los filtros seleccionados.</td>
                             </tr>
                         @endforelse
                     </tbody>
-                    {{-- ▲▲▲ FIN DEL CÓDIGO QUE FALTABA ▲▲▲ --}}
+                    {{-- ▲▲▲ FIN DEL CÓDIGO CORREGIDO Y COMPLETADO ▲▲▲ --}}
                 </table>
             </div>
             @if($eventos->hasPages())

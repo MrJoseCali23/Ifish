@@ -17,7 +17,7 @@ class EstadisticasController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $data = []; // Aquí guardaremos todas las variables para la vista
+        $data = []; 
 
         if ($user->rol === 'Admin') {
             // --- LÓGICA PARA EL SUPER ADMIN ---
