@@ -71,4 +71,5 @@ class Estanque extends Model
     {
         return $this->hasMany(Dispensador::class, 'id_estanque', 'id_estanque');
     }
+    
 }

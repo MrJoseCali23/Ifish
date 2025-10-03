@@ -2,7 +2,6 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ProfileController;
-use App\Http\Controllers\HomeController;
 use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\ReporteController;
 use App\Http\Controllers\EstanqueController;
@@ -12,6 +11,9 @@ use App\Http\Controllers\HorarioAlimentacionController;
 use App\Http\Controllers\UsuarioController;
 use App\Http\Controllers\SuperAdmin\CriaderoController;
 use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
+use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\CriaderoSelectorController;
+use App\Http\Controllers\Dueño\CriaderoController as DueñoCriaderoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -20,20 +22,32 @@ use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
 */
 
 // --- RUTAS PÚBLICAS ---
-// Cualquiera puede acceder a estas rutas, sin iniciar sesión.
 Route::get('/', function () {
     return view('inicio');
-});
+})->name('inicio');
 Route::view('/ayuda', 'ayuda')->name('ayuda');
 
 
-// --- RUTAS DE AUTENTICACIÓN (Login, Registro, etc.) ---
+// --- RUTAS DE AUTENTICACIÓN ---
 require __DIR__.'/auth.php';
 
 
-// --- RUTAS PROTEGIDAS (PARA CUALQUIER USUARIO LOGUEADO) ---
+// --- RUTAS PROTEGIDAS QUE NO REQUIEREN SELECCIÓN DE CRIADERO ---
+// El usuario debe estar logueado, pero aquí es donde elige en qué criadero trabajar.
 Route::middleware(['auth'])->group(function () {
-    Route::view('/dashboard', 'dashboard')->name('dashboard');
+    Route::get('/seleccionar-criadero', [CriaderoSelectorController::class, 'showSelection'])->name('criaderos.select');
+    Route::get('/seleccionar-criadero/{criadero}', [CriaderoSelectorController::class, 'selectCriadero'])->name('criaderos.set-active');
+    
+    // CRUD para que el Dueño gestione la lista de sus propios criaderos
+    Route::resource('mis-criaderos', DueñoCriaderoController::class)->names('dueño.criaderos');
+});
+
+
+// --- RUTAS PROTEGIDAS QUE SÍ REQUIEREN UN CRIADERO ACTIVO ---
+// ▼▼▼ AQUÍ ESTÁ EL CAMBIO PRINCIPAL ▼▼▼
+// A tu grupo de rutas principal le hemos añadido nuestro nuevo "guardia": 'criadero.selected'.
+Route::middleware(['auth', 'criadero.selected'])->group(function () {
+    Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     // Perfil del Usuario
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
@@ -45,15 +59,13 @@ Route::middleware(['auth'])->group(function () {
 
     // CRUDs de Operación del Criadero
     Route::resource('estanques', EstanqueController::class);
-    Route::resource('dispensadores', DispensadorController::class);
+    Route::resource('dispensadores', DispensadorController::class)->except(['create', 'store']);
     Route::resource('tipos_comida', TipoComidaController::class);
     Route::resource('horarios', HorarioAlimentacionController::class);
     
     // Acciones personalizadas
     Route::post('dispensadores/{dispensadore}/alimentar', [DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
-    Route::get('estanques/{estanque}/plan', [EstanqueController::class, 'showPlanForm'])->name('estanques.plan.edit');
-    Route::post('estanques/{estanque}/plan', [EstanqueController::class, 'storePlan'])->name('estanques.plan.store');
-
+    
     // Grupo de rutas para la sección de Reportes
     Route::controller(ReporteController::class)->prefix('reportes')->name('reportes.')->group(function () {
         Route::get('/', 'index')->name('index');
@@ -63,24 +75,23 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/salud-plataforma', 'reporteSaludPlataforma')->name('salud_plataforma');
         Route::get('/historial-alimentacion/pdf', 'historialAlimentacionPdf')->name('historial_alimentacion.pdf');
         Route::get('/historial-dispensador', 'reporteHistorialDispensador')->name('historial_dispensador');
-
     });
 });
 
 
-// --- RUTAS PROTEGIDAS (SOLO PARA SUPER ADMIN) ---
+// --- RUTAS PROTEGIDAS SOLO PARA SUPER ADMIN ---
+// Este grupo se queda igual, ya que el Super Admin no necesita seleccionar un criadero.
 Route::middleware(['auth', 'isadmin'])->prefix('superadmin')->name('superadmin.')->group(function () {
     Route::resource('usuarios', UsuarioController::class);
     Route::resource('criaderos', CriaderoController::class);
     Route::resource('dispensadores-inventario', DispensadorInventarioController::class);
     
     // Acciones personalizadas de Super Admin
-    Route::get('dispensadores-inventario/{dispensadores_inventario}/historial', [DispensadorInventarioController::class, 'showHistory'])->name('dispensadores-inventario.history');
     Route::get('dispensadores-archivados', [DispensadorInventarioController::class, 'indexArchivados'])->name('dispensadores-inventario.archivados');
+    Route::get('dispensadores-inventario/{dispensadores_inventario}/historial', [DispensadorInventarioController::class, 'showHistory'])->name('dispensadores-inventario.history');
     Route::post('criaderos/{criadero}/archive', [CriaderoController::class, 'archive'])->name('criaderos.archive');
     Route::post('criaderos/{criadero}/restore', [CriaderoController::class, 'restore'])->name('criaderos.restore');
     Route::get('criaderos/{criadero}/assign', [CriaderoController::class, 'showAssignForm'])->name('criaderos.assignForm');
     Route::post('criaderos/{criadero}/assign', [CriaderoController::class, 'assignDispenser'])->name('criaderos.assign');
-    Route::get('dispensadores-inventario/{dispensadores_inventario}/historial', [DispensadorInventarioController::class, 'showHistory'])->name('dispensadores-inventario.history');
-    Route::post('criaderos/{criadero}/restore', [CriaderoController::class, 'restore'])->name('criaderos.restore');
+    Route::post('usuarios/{usuario}/restore', [UsuarioController::class, 'restore'])->name('usuarios.restore');
 });

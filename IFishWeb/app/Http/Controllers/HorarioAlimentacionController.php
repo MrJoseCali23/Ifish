@@ -1,203 +1,164 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Models\HorarioAlimentacion;
-use Illuminate\Http\Request;
+
 use App\Models\Dispensador;
+use App\Models\HorarioAlimentacion;
 use App\Models\TipoComida;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
+
 class HorarioAlimentacionController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Muestra los horarios agrupados por dispensador del criadero activo.
      */
     public function index()
     {
-        $dispensadoresConHorarios = Dispensador::whereHas('horarios')
-                                    ->with([
-                                        'estanque', 
-                                        'horarios' => function ($query) {
-                                            $query->orderBy('hora_programada', 'asc')->with('tipoComida');
-                                        }
-                                    ])
+        $criaderoActivoId = session('active_criadero_id');
+
+        // Buscamos TODOS los dispensadores del criadero activo que estén asignados a un estanque.
+        // Cargamos sus horarios de forma eficiente. La vista se encargará de mostrarlos.
+        $dispensadoresDelCriadero = Dispensador::where('criadero_id', $criaderoActivoId)
+                                    ->whereNotNull('id_estanque')
+                                    ->with(['estanque', 'horarios' => function ($query) {
+                                        $query->orderBy('hora_programada', 'asc')->with('tipoComida');
+                                    }])
                                     ->get();
 
-        // Pasamos esta nueva colección a la vista.
-        return view('public.horarios.index', compact('dispensadoresConHorarios'));
+        return view('public.horarios.index', compact('dispensadoresDelCriadero'));
     }
+
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Muestra el formulario para crear nuevos horarios.
      */
     public function create()
     {
-        // Usamos with('estanque') para cargar la relación de forma eficiente (Eager Loading).
-        // También filtramos para mostrar solo los dispensadores que SÍ están asignados a un estanque.
-        $dispensadores = Dispensador::with('estanque')->whereNotNull('id_estanque')->get();
+        $criaderoActivoId = session('active_criadero_id');
         
+        // ▼▼▼ LÓGICA MEJORADA ▼▼▼
+        // Buscamos solo los dispensadores que están en un estanque Y que ya tienen un tipo de comida asignado.
+        $dispensadores = Dispensador::with('estanque', 'tipoComidaActual')
+                                ->where('criadero_id', $criaderoActivoId)
+                                ->whereNotNull('id_estanque')
+                                ->whereNotNull('current_tipo_comida_id') // ¡La nueva condición clave!
+                                ->get();
+
         if ($dispensadores->isEmpty()) {
             return redirect()->route('horarios.index')
-                             ->with('error', 'No se pueden crear horarios. Primero debe asignar un dispensador a un estanque desde el panel de dispensadores.');
+                             ->with('error', 'No hay dispensadores listos para programar. Asegúrate de que tus dispensadores estén asignados a un estanque y tengan un tipo de comida cargado.');
         }
-
-        $tipos_comida = TipoComida::all();
-
-        return view('public.horarios.create', compact('dispensadores', 'tipos_comida'));
+        
+        // Ya no necesitamos pasar los tipos de comida, cada dispensador sabe el suyo.
+        return view('public.horarios.create', compact('dispensadores'));
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Guarda uno o más horarios nuevos.
      */
     public function store(Request $request)
     {
-        // 1. --- VALIDACIÓN DE CAMPOS COMUNES ---
-        // Estos campos son necesarios sin importar el modo.
         $datosValidados = $request->validate([
+            // La validación de 'id_tipo_comida' se elimina.
             'id_dispensador' => 'required|integer|exists:Dispensadores,id_dispensador',
-            'id_tipo_comida' => 'required|integer|exists:Tipos_Comida,id_tipo_comida',
             'cantidad_gramos' => 'required|integer|min:1',
             'modo_creacion' => 'required|in:manual,automatico',
         ]);
+        
+        // Buscamos el dispensador seleccionado para saber qué comida tiene.
+        $dispensadorSeleccionado = Dispensador::find($datosValidados['id_dispensador']);
 
-        // 2. --- LÓGICA CONDICIONAL SEGÚN EL MODO ---
         if ($request->input('modo_creacion') === 'manual') {
-
-            // --- LÓGICA PARA MODO MANUAL ---
-            $request->validate([
-                'hora_programada' => 'required|date_format:H:i',
-            ]);
-
+            $request->validate(['hora_programada' => 'required|date_format:H:i']);
+            
             HorarioAlimentacion::create([
                 'id_dispensador' => $datosValidados['id_dispensador'],
-                'id_tipo_comida' => $datosValidados['id_tipo_comida'],
+                'id_tipo_comida' => $dispensadorSeleccionado->current_tipo_comida_id, // <-- Usa la comida del dispensador
                 'cantidad_gramos' => $datosValidados['cantidad_gramos'],
                 'hora_programada' => $request->input('hora_programada'),
-                'creado_por_usuario' => Auth::id(),
-                'activo' => true,
+                'creado_por_usuario' => Auth::id(),'activo' => true,
             ]);
-
-        } else { // if ($request->input('modo_creacion') === 'automatico')
-
-            // --- LÓGICA PARA MODO AUTOMÁTICO ---
+        } else {
             $datosValidadosAuto = $request->validate([
-                'hora_inicio' => 'required|date_format:H:i',
-                'hora_fin' => 'required|date_format:H:i|after:hora_inicio',
-                'frecuencia' => 'required|integer|min:1|max:24', // Límite para no sobrecargar
+                'hora_inicio' => 'required|date_format:H:i','hora_fin' => 'required|date_format:H:i|after_or_equal:hora_inicio',
+                'frecuencia' => 'required|integer|min:1|max:24',
             ]);
 
             $frecuencia = (int)$datosValidadosAuto['frecuencia'];
             $horaInicio = Carbon::createFromFormat('H:i', $datosValidadosAuto['hora_inicio']);
             $horaFin = Carbon::createFromFormat('H:i', $datosValidadosAuto['hora_fin']);
-
             $horasCalculadas = [];
 
             if ($frecuencia == 1) {
-                // Si la frecuencia es 1, solo se usa la hora de inicio.
                 $horasCalculadas[] = $horaInicio->format('H:i:s');
             } else {
-                // Calculamos la diferencia total en minutos entre la hora de fin y la de inicio.
                 $duracionTotalMinutos = $horaInicio->diffInMinutes($horaFin);
-                // Calculamos el intervalo en minutos entre cada comida.
-                $intervaloMinutos = $duracionTotalMinutos / ($frecuencia - 1);
-
-                // Generamos cada hora
+                $intervaloMinutos = $duracionTotalMinutos > 0 ? $duracionTotalMinutos / ($frecuencia - 1) : 0;
                 for ($i = 0; $i < $frecuencia; $i++) {
                     $horasCalculadas[] = $horaInicio->copy()->addMinutes(round($intervaloMinutos * $i))->format('H:i:s');
                 }
             }
-
-            // Creamos un registro de horario para cada hora calculada
+            
             foreach ($horasCalculadas as $hora) {
                 HorarioAlimentacion::create([
                     'id_dispensador' => $datosValidados['id_dispensador'],
-                    'id_tipo_comida' => $datosValidados['id_tipo_comida'],
+                    'id_tipo_comida' => $dispensadorSeleccionado->current_tipo_comida_id, // <-- Usa la comida del dispensador
                     'cantidad_gramos' => $datosValidados['cantidad_gramos'],
                     'hora_programada' => $hora,
-                    'creado_por_usuario' => Auth::id(),
-                    'activo' => true,
+                    'creado_por_usuario' => Auth::id(),'activo' => true,
                 ]);
             }
         }
-
-        // 3. --- REDIRECCIÓN FINAL ---
         return redirect()->route('horarios.index')->with('success', '¡Horario(s) creado(s) exitosamente!');
     }
 
     /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Muestra el formulario para editar un horario.
      */
     public function edit(HorarioAlimentacion $horario)
     {
-        // Necesitamos la lista de todos los dispensadores y comidas para los menús desplegables
-        $dispensadores = Dispensador::all();
-        $tipos_comida = TipoComida::all();
+        $criaderoActivoId = session('active_criadero_id');
+        $dispensadores = Dispensador::with('estanque', 'tipoComidaActual')
+                                ->where('criadero_id', $criaderoActivoId)
+                                ->whereNotNull('id_estanque')
+                                ->whereNotNull('current_tipo_comida_id')
+                                ->get();
 
-        return view('public.horarios.edit', compact('horario', 'dispensadores', 'tipos_comida'));
+        return view('public.horarios.edit', compact('horario', 'dispensadores'));
     }
 
     /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Actualiza un horario en la base de datos.
      */
     public function update(Request $request, HorarioAlimentacion $horario)
     {
-        // 1. VALIDACIÓN
-        $request->validate([
+        // La validación ahora es más simple
+        $datosValidados = $request->validate([
             'id_dispensador' => 'required|integer|exists:Dispensadores,id_dispensador',
-            'id_tipo_comida' => 'required|integer|exists:Tipos_Comida,id_tipo_comida',
-            'hora_programada' => 'required|date_format:H:i,H:i:s', // Acepta HH:MM o HH:MM:SS
             'cantidad_gramos' => 'required|integer|min:1',
-            'activo' => 'nullable|boolean', // 'activo' puede no venir en el request si el checkbox está desmarcado
+            'hora_programada' => 'required|date_format:H:i',
+            'activo' => 'sometimes|boolean' // 'activo' es opcional
         ]);
+        
+        // Buscamos la comida del dispensador seleccionado
+        $dispensadorSeleccionado = Dispensador::find($datosValidados['id_dispensador']);
+        
+        // Añadimos el tipo de comida y el estado 'activo' a los datos para actualizar
+        $datosValidados['id_tipo_comida'] = $dispensadorSeleccionado->current_tipo_comida_id;
+        $datosValidados['activo'] = $request->has('activo');
 
-        // 2. ACTUALIZACIÓN
-        $horario->update([
-            'id_dispensador' => $request->id_dispensador,
-            'id_tipo_comida' => $request->id_tipo_comida,
-            'hora_programada' => $request->hora_programada,
-            'cantidad_gramos' => $request->cantidad_gramos,
-            // Si el checkbox 'activo' está marcado, se envía '1'. Si no, no se envía nada.
-            // Con $request->has('activo') comprobamos si existe.
-            'activo' => $request->has('activo'),
-        ]);
+        $horario->update($datosValidados);
 
-        // 3. REDIRECCIÓN
-        return redirect()->route('horarios.index')->with('success', '¡Horario actualizado exitosamente!');
+        return redirect()->route('horarios.index')->with('success', 'Horario actualizado exitosamente.');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Elimina un horario.
      */
     public function destroy(HorarioAlimentacion $horario)
     {
         $horario->delete();
-        return redirect()->route('horarios.index')->with('success', 'Horario eliminado exitosamente.');
+        return redirect()->route('horarios.index')->with('success', 'Horario eliminado.');
     }
 }

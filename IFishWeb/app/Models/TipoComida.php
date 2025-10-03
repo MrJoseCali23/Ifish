@@ -42,7 +42,7 @@ class TipoComida extends Model
     {
         return $this->belongsTo(Criadero::class, 'criadero_id');
     }
-    protected static function booted()
+   protected static function booted()
     {
         static::addGlobalScope(new CriaderoScope);
     }

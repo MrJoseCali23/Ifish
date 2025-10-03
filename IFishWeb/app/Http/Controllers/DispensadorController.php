@@ -3,137 +3,104 @@
 namespace App\Http\Controllers;
 
 use App\Models\Dispensador;
-use App\Models\TipoComida;
 use App\Models\Estanque;
 use App\Models\RegistroAlimentacion;
+use App\Models\TipoComida;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\Rule;
-use App\Models\HorarioAlimentacion;
 
 class DispensadorController extends Controller
 {
     /**
-     * Aplica la política de permisos a todos los métodos de este controlador.
+     * Aplica la política de permisos a todos los métodos del recurso.
      */
     public function __construct()
     {
-        // Esto le dice a Laravel que antes de ejecutar cualquier método (index, edit, update, etc.),
-        // debe verificar los permisos en el archivo DispensadorPolicy que creamos.
         $this->authorizeResource(Dispensador::class, 'dispensadore');
     }
 
     /**
-     * Muestra la lista de dispensadores del criadero del usuario.
+     * Muestra la lista de dispensadores DEL CRIADERO ACTIVO.
      */
     public function index()
     {
-        // El GlobalScope y la Policy ya se encargan de filtrar,
-        // así que el Dueño/Trabajador solo verá los dispensadores de su criadero.
-        $dispensadores = Dispensador::with(['estanque', 'horarios'])
-                                ->withCount(['horarios', 'registrosAlimentacion'])
-                                ->latest('id_dispensador')
-                                ->paginate(10);
+        // 1. Obtenemos el ID del criadero activo desde la sesión.
+        $criaderoActivoId = session('active_criadero_id');
 
-        $tipos_comida = TipoComida::orderBy('nombre_comida')->get();
+        // 2. Buscamos solo los dispensadores que pertenecen a ESE criadero.
+        $dispensadores = Dispensador::where('criadero_id', $criaderoActivoId)
+                                  ->with(['estanque', 'tipoComidaActual'])
+                                  ->withCount(['horarios', 'registrosAlimentacion'])
+                                  ->latest('id_dispensador')
+                                  ->paginate(10);
 
-        return view('public.dispensadores.index', compact('dispensadores', 'tipos_comida'));
+        return view('public.dispensadores.index', compact('dispensadores'));
     }
 
     /**
-     * NOTA: Los métodos 'create' y 'store' han sido eliminados de este controlador.
-     * La creación de nuevos dispensadores ahora es una tarea exclusiva del Super Admin
-     * y se gestiona desde el 'DispensadorInventarioController'.
-     */
-
-    /**
-     * Muestra el formulario para editar un dispensador.
+     * Muestra el formulario para que un Dueño gestione un dispensador.
      */
     public function edit(Dispensador $dispensadore)
     {
-        // authorizeResource ya verificó el permiso de 'update'
-        $estanques = Estanque::all(); // El Global Scope filtra para mostrar solo los de su criadero
-        return view('public.dispensadores.edit', compact('dispensadore', 'estanques'));
+        $criaderoActivoId = session('active_criadero_id');
+        $estanques = Estanque::where('criadero_id', $criaderoActivoId)->orderBy('nombre_estanque')->get();
+        $tiposComida = TipoComida::where('criadero_id', $criaderoActivoId)->orWhereNull('criadero_id')->get();
+        
+        return view('public.dispensadores.edit', compact('dispensadore', 'estanques', 'tiposComida'));
     }
 
     /**
-     * Actualiza la información de un dispensador.
+     * Actualiza la configuración de un dispensador.
      */
     public function update(Request $request, Dispensador $dispensadore)
     {
-        // Verificamos si el usuario tiene permiso para actualizar
-        $this->authorize('update', $dispensadore);
-
-        // 1. --- VALIDACIÓN SIMPLIFICADA ---
-        // Solo validamos los campos que el usuario PUEDE cambiar.
         $datosValidados = $request->validate([
-            'id_estanque' => ['required', 'integer', \Illuminate\Validation\Rule::exists('Estanques', 'id_estanque')->where('criadero_id', Auth::user()->criadero_id)],
+            'id_estanque' => ['required', 'integer', Rule::exists('Estanques', 'id_estanque')->where('criadero_id', session('active_criadero_id'))],
             'estado' => ['required', 'in:Activo,Inactivo,Error'],
+            'current_tipo_comida_id' => ['nullable', 'integer', 'exists:Tipos_Comida,id_tipo_comida'],
         ]);
         
-        // 2. --- ACTUALIZACIÓN PRECISA ---
-        // Actualizamos únicamente los campos permitidos.
         $dispensadore->update($datosValidados);
 
         return redirect()->route('dispensadores.index')->with('success', 'Dispensador actualizado exitosamente.');
-}
+    }
 
     /**
-     * Elimina un dispensador.
+     * Elimina un dispensador (acción deshabilitada para Dueños por la Policy).
      */
     public function destroy(Dispensador $dispensadore)
     {
-        // authorizeResource ya verificó el permiso de 'delete'
-        $horariosAsociados = $dispensadore->horarios()->count();
-        $registrosAsociados = $dispensadore->registrosAlimentacion()->count();
-        
         $dispensadore->delete();
-        
-        $mensaje = "¡Dispensador eliminado exitosamente!";
-        if ($horariosAsociados > 0 || $registrosAsociados > 0) {
-            $mensaje .= " Se eliminaron también {$horariosAsociados} horarios y {$registrosAsociados} registros de su historial.";
-        }
-
-        return redirect()->route('dispensadores.index')->with('success', $mensaje);
+        return redirect()->route('dispensadores.index')->with('success', 'Dispensador eliminado exitosamente.');
     }
-    
-    /**
-     * Ejecuta una alimentación manual.
-     */
-    // app/Http/Controllers/DispensadorController.php
 
+    /**
+     * Procesa una orden de alimentación manual.
+     */
     public function manualFeed(Request $request, Dispensador $dispensadore)
     {
         $this->authorize('manualFeed', $dispensadore);
 
-        // 1. --- LÓGICA PARA INFERIR EL TIPO DE COMIDA ---
-        // Buscamos en los horarios de este dispensador, contamos cuántas veces aparece cada tipo de comida,
-        // y nos quedamos con el más frecuente.
-        $tipoComidaPredominante = HorarioAlimentacion::where('id_dispensador', $dispensadore->id_dispensador)
-            ->select('id_tipo_comida')
-            ->groupBy('id_tipo_comida')
-            ->orderByRaw('COUNT(*) DESC')
-            ->first();
-
-        // Si el dispensador no tiene ningún horario, no podemos inferir la comida.
-        if (!$tipoComidaPredominante) {
-            return back()->with('error', 'No se puede alimentar manualmente. El dispensador necesita tener al menos un horario programado para detectar el tipo de comida.');
+        if (is_null($dispensadore->current_tipo_comida_id)) {
+            return back()->with('error', 'Este dispensador no tiene un tipo de comida asignado.');
         }
 
-        // 2. --- VALIDACIÓN ---
-        $request->validate(['cantidad_dispensada_gramos' => 'required|integer|min:1']);
+        $request->validate(['cantidad_dispensada_gramos' => 'required|integer|min:1|max:10000']);
 
-        // 3. --- CREACIÓN DEL REGISTRO ---
+        if (($request->cantidad_dispensada_gramos / 1000) > $dispensadore->nivel_comida_actual_kg) {
+            return back()->with('error', 'La cantidad solicitada supera el nivel de comida actual.');
+        }
+
         RegistroAlimentacion::create([
             'id_dispensador' => $dispensadore->id_dispensador,
-            'id_tipo_comida' => $tipoComidaPredominante->id_tipo_comida, // <-- Usamos la comida inferida
+            'id_tipo_comida' => $dispensadore->current_tipo_comida_id,
             'iniciado_por_usuario' => Auth::id(),
             'cantidad_dispensada_gramos' => $request->cantidad_dispensada_gramos,
             'tipo_alimentacion' => 'Manual',
             'exitoso' => true,
         ]);
 
-        // 4. --- ENVIAR COMANDO AL ESP ---
         $dispensadore->comando_pendiente = 'dispensar';
         $dispensadore->comando_valor = $request->input('cantidad_dispensada_gramos');
         $dispensadore->save();

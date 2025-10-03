@@ -4,41 +4,32 @@
 
 @section('content')
     <h2 class="text-primary fw-bold">Crear Nuevos Horarios</h2>
-    <p class="text-muted">Selecciona un modo de creación: Manual para una hora específica, o Automático para generar varios horarios en un rango.</p>
+    <p class="text-muted">Selecciona un dispensador para programar. El sistema usará automáticamente el tipo de comida que tiene asignado.</p>
 
     <form method="POST" action="{{ route('horarios.store') }}">
         @csrf
         <div class="card shadow-sm">
             <div class="card-header">
-                <h5 class="mb-0">1. Selecciona el Dispensador y la Comida</h5>
+                <h5 class="mb-0">1. Selecciona el Dispensador</h5>
             </div>
             <div class="card-body">
                 <div class="row">
-                    <div class="col-md-6 mb-3">
+                    <div class="col-md-8 mb-3">
                         <label for="id_dispensador" class="form-label">Dispensador</label>
                         <select class="form-select @error('id_dispensador') is-invalid @enderror" id="id_dispensador" name="id_dispensador" required>
-                            <option value="" disabled selected>Selecciona un dispensador...</option>
+                            <option value="">Selecciona un dispensador preparado...</option>
                             @foreach ($dispensadores as $dispensador)
-                                {{-- ▼▼▼ AQUÍ ESTÁ EL CAMBIO ▼▼▼ --}}
-                                <option value="{{ $dispensador->id_dispensador }}" {{ old('id_dispensador') == $dispensador->id_dispensador ? 'selected' : '' }}>
-                                    {{ $dispensador->modelo ?? 'Sin Modelo' }} (Estanque: {{ $dispensador->estanque->nombre_estanque ?? 'N/A' }})
+                                <option value="{{ $dispensador->id_dispensador }}" data-comida="{{ $dispensador->tipoComidaActual->nombre_comida ?? 'No asignada' }}">
+                                    {{ $dispensador->modelo }} (Estanque: {{ $dispensador->estanque->nombre_comida ?? 'N/A' }})
                                 </option>
-                                {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
                             @endforeach
                         </select>
                         @error('id_dispensador') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
-                    <div class="col-md-6 mb-3">
-                        <label for="id_tipo_comida" class="form-label">Tipo de Comida</label>
-                        <select class="form-select @error('id_tipo_comida') is-invalid @enderror" id="id_tipo_comida" name="id_tipo_comida" required>
-                            <option value="" disabled selected>Selecciona un tipo de comida...</option>
-                            @foreach ($tipos_comida as $tipo)
-                                <option value="{{ $tipo->id_tipo_comida }}" {{ old('id_tipo_comida') == $tipo->id_tipo_comida ? 'selected' : '' }}>
-                                    {{ $tipo->nombre_comida }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('id_tipo_comida') <div class="invalid-feedback">{{ $message }}</div> @enderror
+                    {{-- ▼▼▼ CAMPO DE SOLO LECTURA PARA MOSTRAR LA COMIDA ▼▼▼ --}}
+                    <div class="col-md-4 mb-3">
+                        <label class="form-label">Tipo de Comida Asignada</label>
+                        <input type="text" id="tipoComidaAsignada" class="form-control" value="Selecciona un dispensador" readonly>
                     </div>
                 </div>
             </div>
@@ -88,7 +79,17 @@
 
 @push('scripts')
 <script>
-    // Script para mostrar/ocultar los campos según el modo seleccionado
+    // Script para mostrar el tipo de comida del dispensador seleccionado
+    const selectDispensador = document.getElementById('id_dispensador');
+    const inputComida = document.getElementById('tipoComidaAsignada');
+
+    selectDispensador.addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const nombreComida = selectedOption.getAttribute('data-comida');
+        inputComida.value = nombreComida;
+    });
+
+    // Script para cambiar entre modo manual y automático
     const modoManualRadio = document.getElementById('modoManual');
     const modoAutomaticoRadio = document.getElementById('modoAutomatico');
     const camposManual = document.getElementById('camposManual');

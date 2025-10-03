@@ -3,7 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Http\Requests\Auth\LoginRequest; // <-- Usa el LoginRequest correcto
+use App\Http\Requests\Auth\LoginRequest;
 use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -24,28 +24,31 @@ class AuthenticatedSessionController extends Controller
      */
     public function store(LoginRequest $request): RedirectResponse
     {
-        // 1. Laravel intenta autenticar al usuario (comprueba email y contraseña)
         $request->authenticate();
 
-        // 2. ▼▼▼ NUESTRO BLOQUE DE SEGURIDAD ▼▼▼
-        // Si la autenticación fue exitosa, AHORA revisamos su estado.
-        if (Auth::user()->estado === 'Inactivo') {
-            
-            // Si está inactivo, cerramos la sesión que se acaba de crear
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
-            Auth::logout();
-
-            // Y lo devolvemos al login con un mensaje de error claro
-            return back()->withErrors([
-                'email' => 'Esta cuenta ha sido desactivada. Por favor, contacta al administrador.',
-            ]);
-        }
-        // ▲▲▲ FIN DEL BLOQUE DE SEGURIDAD ▲▲▲
-
-        // 3. Si todo está bien y el usuario está activo, regeneramos la sesión y lo dejamos entrar
         $request->session()->regenerate();
 
+        $user = Auth::user();
+
+        // --- INICIO DE LA NUEVA LÓGICA INTELIGENTE ---
+
+        // Si el usuario es un "Dueño"
+        if ($user->rol === 'Dueño') {
+            $criaderos = $user->criaderos;
+
+            // Si solo tiene UN criadero, lo seleccionamos automáticamente
+            if ($criaderos->count() === 1) {
+                // Guardamos el ID del único criadero en la sesión
+                session(['active_criadero_id' => $criaderos->first()->id]);
+                // Y lo enviamos directo al dashboard
+                return redirect()->intended(RouteServiceProvider::HOME);
+            }
+            
+            // Si tiene más de uno, o ninguno, lo enviamos a la página de selección
+            return redirect()->route('criaderos.select');
+        }
+
+        // Si es Super Admin o cualquier otro rol, va al dashboard normal
         return redirect()->intended(RouteServiceProvider::HOME);
     }
 

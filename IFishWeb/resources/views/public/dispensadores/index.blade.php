@@ -4,7 +4,7 @@
 
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">🤖 Gestión de Dispensadores</h2>
+        <h2 class="text-primary fw-bold">Gestión de Dispensadores</h2>
         
         @can('create', App\Models\Dispensador::class)
         <a href="{{ route('superadmin.dispensadores-inventario.create') }}" class="btn btn-success">
@@ -13,6 +13,7 @@
         @endcan
     </div>
 
+    {{-- Bloque de Mensajes --}}
     @if(session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -81,24 +82,19 @@
                                 </div>
                             </div>
                             <div class="card-footer text-end">
-                                @can('manualFeed', $dispensadore)
-                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#manualFeedModal{{ $dispensadore->id_dispensador }}" title="Alimentación Manual"><i class="bi bi-send-fill"></i></button>
-                                @endcan
+                                @if($dispensadore->current_tipo_comida_id)
+                                    @can('manualFeed', $dispensadore)
+                                        <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal" data-bs-target="#manualFeedModal{{ $dispensadore->id_dispensador }}" title="Alimentación Manual"><i class="bi bi-send-fill"></i></button>
+                                    @endcan
+                                @endif
                                 @can('update', $dispensadore)
                                     <a href="{{ route('dispensadores.edit', $dispensadore) }}" class="btn btn-sm btn-warning" title="Editar"><i class="bi bi-pencil-square"></i></a>
-                                @endcan
-                                @can('delete', $dispensadore)
-                                    <form action="{{ route('dispensadores.destroy', $dispensadore) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro?');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-danger" title="Eliminar"><i class="bi bi-trash"></i></button>
-                                    </form>
                                 @endcan
                             </div>
                         </div>
                     </div>
 
-                    <!-- Modal para Alimentación Manual -->
+                    <!-- ▼▼▼ ESTE ES EL BLOQUE DE CÓDIGO RESTAURADO ▼▼▼ -->
                     <div class="modal fade" id="manualFeedModal{{ $dispensadore->id_dispensador }}" tabindex="-1" aria-hidden="true">
                         <div class="modal-dialog">
                             <div class="modal-content">
@@ -109,12 +105,11 @@
                                 <form method="POST" action="{{ route('dispensadores.manualFeed', $dispensadore) }}">
                                     @csrf
                                     <div class="modal-body">
-                                        <!-- <div class="mb-3">
-                                            <label class="form-label" >Tipo de Comida Cargada: {{ $dispensadore->id_tipo_comida->nombre_comida ?? 'No asignada' }}</label>
+                                        <div class="mb-3">
+                                            <label class="form-label">Tipo de Comida Cargada</label>
                                             <input type="text" class="form-control" 
-                                                   value="{{ $dispensadore->tipoComida->nombre_comida ?? 'No asignada' }}" readonly>
-                                        </div> -->
-                                        {{-- ▲▲▲ FIN DEL BLOQUE ACTUALIZADO ▲▲▲ --}}
+                                                   value="{{ $dispensadore->tipoComidaActual->nombre_comida ?? 'No asignada' }}" readonly>
+                                        </div>
                                         <div class="mb-3">
                                             <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">Cantidad a Dispensar (en gramos)</label>
                                             <input type="number" class="form-control" id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">
@@ -128,6 +123,8 @@
                             </div>
                         </div>
                     </div>
+                    <!-- ▲▲▲ FIN DEL BLOQUE DE CÓDIGO RESTAURADO ▲▲▲ -->
+
                 @empty
                     <div class="col-12"><div class="alert alert-info text-center">No tienes dispensadores asignados a tu criadero.</div></div>
                 @endforelse

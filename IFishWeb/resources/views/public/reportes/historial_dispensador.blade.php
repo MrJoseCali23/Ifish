@@ -25,7 +25,8 @@
                     <thead class="table-light">
                         <tr>
                             <th>Fecha y Hora</th>
-                            <th>Dispensador</th> 
+                            <th>Dispensador</th>
+                            <th>Tipo de Evento</th>
                             <th>Descripción</th>
                             <th>Realizado por</th>
                         </tr>
@@ -34,7 +35,6 @@
                         @forelse ($eventos as $evento)
                             <tr>
                                 <td>{{ $evento->created_at->format('d/m/Y H:i:s') }}</td>
-                                {{-- Mostramos el modelo y la MAC del dispensador asociado al evento --}}
                                 <td>
                                     <strong>{{ $evento->dispensador->modelo ?? 'N/A' }}</strong><br>
                                     <code class="small">{{ $evento->dispensador->mac_address ?? '' }}</code>
@@ -49,7 +49,6 @@
                             </tr>
                         @endforelse
                     </tbody>
-                    {{-- ▲▲▲ FIN DEL CÓDIGO CORREGIDO Y COMPLETADO ▲▲▲ --}}
                 </table>
             </div>
             @if($eventos->hasPages())

@@ -18,17 +18,14 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'rol',
-    'criadero_id', 
-    'estado',
-];
-    public function criadero()
-    {
-        return $this->belongsTo(Criadero::class, 'criadero_id');
-    }
+        'name',
+        'email',
+        'password',
+        'rol',
+        'estado',
+        // La columna 'criadero_id' ha sido eliminada.
+    ];
+
     /**
      * The attributes that should be hidden for serialization.
      *
@@ -47,4 +44,13 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
     ];
+
+    /**
+     * Un usuario (Dueño) puede tener muchos criaderos.
+     */
+    public function criaderos()
+    {
+        // Esta es la nueva relación "Uno a Muchos".
+        return $this->hasMany(Criadero::class, 'user_id');
+    }
 }

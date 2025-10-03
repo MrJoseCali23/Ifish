@@ -1,139 +1,105 @@
 <?php
 
 namespace App\Http\Controllers;
+
 use App\Models\Estanque;
-use Illuminate\Support\Facades\Auth;
-use App\Models\HorarioAlimentacion; 
-use App\Models\TipoComida;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Validation\Rule;
+
 class EstanqueController extends Controller
 {
     /**
-     * Display a listing of the resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Aplica la política de permisos a todos los métodos del recurso.
+     */
+    public function __construct()
+    {
+        $this->authorizeResource(Estanque::class, 'estanque');
+    }
+
+    /**
+     * Muestra la lista de estanques DEL CRIADERO ACTIVO.
      */
     public function index()
     {
-    // Usamos with('creadoPor') para cargar la relación con el usuario.
-    // Esto previene el problema de N+1 queries y es mucho más eficiente.
-        $estanques = Estanque::with('creadoPor')->latest()->paginate(10);
+        // 1. Obtenemos el ID del criadero activo desde la sesión.
+        $criaderoActivoId = session('active_criadero_id');
 
-    // Retornamos la vista y le pasamos la colección de estanques.
+        // 2. Buscamos solo los estanques que pertenecen a ESE criadero.
+        $estanques = Estanque::where('criadero_id', $criaderoActivoId)
+                           ->withCount('dispensadores')
+                           ->latest('id_estanque')
+                           ->paginate(10);
+                           
         return view('public.estanques.index', compact('estanques'));
     }
 
     /**
-     * Show the form for creating a new resource.
-     *
-     * @return \Illuminate\Http\Response
+     * Muestra el formulario para crear un nuevo estanque.
      */
     public function create()
     {
-    // Solo necesitamos mostrar la vista que contiene el formulario.
-    return view('public.estanques.create');
+        return view('public.estanques.create');
     }
 
     /**
-     * Store a newly created resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @return \Illuminate\Http\Response
+     * Guarda un nuevo estanque en la base de datos, asignándolo al criadero activo.
      */
-    // app/Http/Controllers/EstanqueController.php
-
-/**
- * Store a newly created resource in storage.
- */
-        public function store(Request $request)
+    public function store(Request $request)
     {
-        // ... tu código de validación ...
-        $this->authorize('create', Estanque::class);
-        Estanque::create([
-            'nombre_estanque' => $request->nombre_estanque,
-            'ubicacion' => $request->ubicacion,
-            'dimensiones_metros' => $request->dimensiones_metros ?? 'No especificado',
-            'creado_por_usuario' => Auth::id(),
-            'actualizado_por_usuario' => Auth::id(),
-            'criadero_id' => Auth::user()->criadero_id, // <-- LÍNEA CLAVE AÑADIDA
-        ]);
-
-        return redirect()->route('estanques.index')->with('success', '¡Estanque creado exitosamente!');
-    }
-
-    /**
-     * Display the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function show($id)
-    {
-        //
-    }
-
-    /**
-     * Show the form for editing the specified resource.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function edit(Estanque $estanque)
-    {
-        // Gracias al Route Model Binding, Laravel ya nos da el estanque.
-        // Solo tenemos que pasarlo a la vista.
-        return view('public.estanques.edit', compact('estanque'));
-    }
-
-    /**
-     * Update the specified resource in storage.
-     *
-     * @param  \Illuminate\Http\Request  $request
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
-     */
-    public function update(Request $request, Estanque $estanque)
-    {   
-        $this->authorize('update', $estanque);
-        // 1. VALIDACIÓN DE DATOS
         $request->validate([
             'nombre_estanque' => 'required|string|max:100',
             'ubicacion' => 'nullable|string|max:255',
             'dimensiones_metros' => 'nullable|string|max:50',
         ]);
 
-        // 2. PREPARAMOS LOS DATOS A ACTUALIZAR
-        $data = $request->only('nombre_estanque', 'ubicacion');
+        Estanque::create([
+            'nombre_estanque' => $request->nombre_estanque,
+            'ubicacion' => $request->ubicacion,
+            'dimensiones_metros' => $request->dimensiones_metros,
+            'criadero_id' => session('active_criadero_id'), // <-- Asigna automáticamente el criadero activo
+            'creado_por_usuario' => Auth::id(),
+            'actualizado_por_usuario' => Auth::id(),
+        ]);
 
-        // Usamos la misma lógica del valor por defecto que en el método store
-        $data['dimensiones_metros'] = $request->dimensiones_metros ?? 'No especificado';
-
-        // Actualizamos el ID del usuario que realizó la última modificación
-        $data['actualizado_por_usuario'] = Auth::id();
-
-        // 3. ACTUALIZAMOS EL REGISTRO EN LA BASE DE DATOS
-        $estanque->update($data);
-
-        // 4. REDIRIGIMOS DE VUELTA A LA LISTA CON UN MENSAJE DE ÉXITO
-        return redirect()->route('estanques.index')->with('success', '¡Estanque actualizado exitosamente!');
+        return redirect()->route('estanques.index')->with('success', '¡Estanque creado exitosamente!');
     }
 
     /**
-     * Remove the specified resource from storage.
-     *
-     * @param  int  $id
-     * @return \Illuminate\Http\Response
+     * Muestra el formulario para editar un estanque.
      */
-    public function destroy(Estanque $estanque)
-    {   
-         $this->authorize('delete', $estanque);
-        // 1. ELIMINAMOS EL REGISTRO DE LA BASE DE DATOS
-        $estanque->delete();
-
-        // 2. REDIRIGIMOS A LA LISTA CON UN MENSAJE DE ÉXITO
-        return redirect()->route('estanques.index')->with('success', 'Estanque eliminado exitosamente.');
+    public function edit(Estanque $estanque)
+    {
+        return view('public.estanques.edit', compact('estanque'));
     }
 
+    /**
+     * Actualiza un estanque en la base de datos.
+     */
+    public function update(Request $request, Estanque $estanque)
+    {
+        $request->validate([
+            'nombre_estanque' => 'required|string|max:100',
+            'ubicacion' => 'nullable|string|max:255',
+            'dimensiones_metros' => 'nullable|string|max:50',
+        ]);
+
+        $estanque->update([
+            'nombre_estanque' => $request->nombre_estanque,
+            'ubicacion' => $request->ubicacion,
+            'dimensiones_metros' => $request->dimensiones_metros,
+            'actualizado_por_usuario' => Auth::id(),
+        ]);
+
+        return redirect()->route('estanques.index')->with('success', 'Estanque actualizado exitosamente.');
+    }
+
+    /**
+     * Elimina un estanque de la base de datos.
+     */
+    public function destroy(Estanque $estanque)
+    {
+        $estanque->delete();
+        return redirect()->route('estanques.index')->with('success', 'Estanque eliminado exitosamente.');
+    }
 }

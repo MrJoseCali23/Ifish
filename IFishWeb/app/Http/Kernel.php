@@ -65,7 +65,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'isadmin' => \App\Http\Middleware\IsAdmin::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
-
+        'criadero.selected' => \App\Http\Middleware\EnsureCriaderoIsSelected::class,
     // AÑADE ESTA LÍNEA
         'isadmin' => \App\Http\Middleware\IsAdmin::class,
     ];

@@ -2,21 +2,24 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Hash;
 use App\Models\Criadero;
-use Illuminate\Validation\Rules;
-use Illuminate\Validation\Rule;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\Rules;
 
 class UsuarioController extends Controller
 {
+    /**
+     * Muestra la lista de usuarios para el Super Admin.
+     */
     public function index(Request $request)
     {
-        $status = $request->query('status', 'activos'); // Por defecto, mostramos los activos
-
-        $query = User::with('criadero')->orderBy('name', 'asc');
+        $status = $request->query('status', 'activos');
+        $query = User::orderBy('name', 'asc');
 
         if ($status == 'inactivos') {
             $query->where('estado', 'Inactivo');
@@ -27,57 +30,57 @@ class UsuarioController extends Controller
         $usuarios = $query->paginate(15)->withQueryString();
 
         return view('usuarios.index', compact('usuarios', 'status'));
-}
-    public function create()
-    {
-        // Buscamos todos los criaderos para poder listarlos en un menú desplegable.
-        $criaderos = Criadero::all();
-
-        // Pasamos la lista de criaderos a la vista.
-        // Asegúrate de que la ruta de la vista sea la correcta.
-        // Si tu vista está en 'public/usuarios', usa 'public.usuarios.create'.
-        return view('usuarios.create', compact('criaderos'));
     }
 
+    /**
+     * Muestra el formulario para crear un nuevo usuario.
+     */
+    public function create()
+    {
+        return view('usuarios.create');
+    }
+
+    /**
+     * Guarda un nuevo usuario en la base de datos.
+     */
     public function store(Request $request)
     {
-        // 1. --- VALIDACIÓN DE DATOS ---
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
-            'rol' => ['required', 'in:Admin,Dueño'],
-
-            // Regla inteligente: el criadero_id es requerido SI el rol es Dueño o Trabajador.
-            'criadero_id' => ['nullable', 'required_if:rol,Dueño', 'exists:criaderos,id'],
-        ], [
-            // Mensajes de error personalizados en español
-            'criadero_id.required_if' => 'Debe seleccionar un criadero para el rol de Dueño',
+            'nombre_criadero' => ['required', 'string', 'max:255', 'unique:criaderos,nombre'],
+            'ubicacion' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // 2. --- CREACIÓN DEL USUARIO ---
-        User::create([
-            'name' => $request->name,
-            'email' => $request->email,
-            'password' => Hash::make($request->password),
-            'rol' => $request->rol,
-            // Si el rol es 'Admin', criadero_id será null.
-            // Si es 'Dueño' o 'Trabajador', tomará el valor del formulario.
-            'criadero_id' => $request->criadero_id, 
-        ]);
+        DB::transaction(function () use ($request) {
+            $dueño = User::create([
+                'name' => $request->name,
+                'email' => $request->email,
+                'password' => Hash::make($request->password),
+                'rol' => 'Dueño',
+            ]);
 
-        // 3. --- REDIRECCIÓN ---
-        return redirect()->route('superadmin.usuarios.index')->with('success', '¡Usuario creado exitosamente!');
+            $criadero = Criadero::create([
+                'nombre' => $request->nombre_criadero,
+                'ubicacion' => $request->ubicacion,
+                'user_id' => $dueño->id,
+            ]);
+
+            $dueño->criadero_id = $criadero->id;
+            $dueño->save();
+        });
+
+        return redirect()->route('superadmin.usuarios.index')->with('success', 'Dueño y su primer criadero han sido creados exitosamente.');
     }
 
     /**
- * Muestra el formulario para editar un usuario.
- */
+     * Muestra el formulario para editar un usuario.
+     */
     public function edit(User $usuario)
     {
-        // Buscamos todos los criaderos para el menú desplegable
-        $criaderos = Criadero::all();
-
+        // Cargar los criaderos asignados al usuario (solo para Dueños)
+        $criaderos = $usuario->rol === 'Dueño' ? $usuario->criaderos()->orderBy('nombre')->get() : collect();
         return view('usuarios.edit', compact('usuario', 'criaderos'));
     }
 
@@ -86,58 +89,64 @@ class UsuarioController extends Controller
      */
     public function update(Request $request, User $usuario)
     {
-        // 1. --- VALIDACIÓN ---
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            // La regla 'unique' debe ignorar al email del usuario actual
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($usuario->id)],
-            'rol' => ['required', 'in:Admin,Dueño,Trabajador'],
-            'criadero_id' => ['nullable', 'required_if:rol,Dueño', 'required_if:rol,Trabajador', 'exists:criaderos,id'],
-            'password' => ['nullable', 'confirmed', Rules\Password::defaults()], // La contraseña es opcional
+            'rol' => ['required', 'in:Admin,Dueño'],
+            'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // 2. --- PREPARAR LOS DATOS ---
-        $data = $request->only('name', 'email', 'rol', 'criadero_id');
-
-        // Si el rol es 'Admin', nos aseguramos de que criadero_id sea nulo
-        if ($request->rol === 'Admin') {
-            $data['criadero_id'] = null;
-        }
-
-        // Solo actualizamos la contraseña si el usuario escribió una nueva
+        $data = $request->only('name', 'email', 'rol');
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
-
-        // 3. --- ACTUALIZAR EN LA BASE DE DATOS ---
+        if ($request->rol === 'Admin') {
+            $data['criadero_id'] = null; // Limpia criadero_id si cambia a Admin
+        }
         $usuario->update($data);
 
-        // 4. --- REDIRECCIÓN ---
         return redirect()->route('superadmin.usuarios.index')->with('success', '¡Usuario actualizado exitosamente!');
     }
 
+    /**
+     * Desactiva un usuario y, si es un Dueño, archiva todos sus criaderos.
+     */
     public function destroy(User $usuario)
-{
-    // Usamos una transacción para asegurar que ambas operaciones se completen
-    DB::transaction(function () use ($usuario) {
-        
-        // 1. Desactivamos al usuario, como antes
-        $usuario->update(['estado' => 'Inactivo']);
+    {
+        DB::transaction(function () use ($usuario) {
+            $usuario->update(['estado' => 'Inactivo']);
+            if ($usuario->rol === 'Dueño') {
+                $usuario->criaderos()->update(['estado' => 'Archivado']);
+            }
+        });
 
-        // 2. ▼▼▼ NUEVA LÓGICA INTELIGENTE ▼▼▼
-        // Si el usuario que estamos desactivando es un 'Dueño' Y tiene un criadero asociado...
-        if ($usuario->rol === 'Dueño' && $usuario->criadero) {
-            // ...entonces también archivamos su criadero.
-            $usuario->criadero->update(['estado' => 'Archivado']);
+        $mensaje = "La cuenta del usuario {$usuario->name} ha sido desactivada.";
+        if ($usuario->rol === 'Dueño') {
+            $mensaje .= " Todos sus criaderos han sido archivados.";
         }
-    });
 
-    // Construimos un mensaje de éxito dinámico para el Super Admin
-    $mensaje = "La cuenta del usuario {$usuario->name} ha sido desactivada.";
-    if ($usuario->rol === 'Dueño' && $usuario->criadero) {
-        $mensaje .= " Su criadero también ha sido archivado.";
+        return redirect()->route('superadmin.usuarios.index')->with('success', $mensaje);
     }
 
-    return redirect()->route('superadmin.usuarios.index')->with('success', $mensaje);
-}
+    /**
+     * Reactiva a un usuario y a todos sus criaderos.
+     */
+    public function restore($userId)
+    {
+        $usuario = User::findOrFail($userId);
+
+        DB::transaction(function () use ($usuario) {
+            $usuario->update(['estado' => 'Activo']);
+            if ($usuario->rol === 'Dueño') {
+                $usuario->criaderos()->update(['estado' => 'Activo']);
+            }
+        });
+
+        $mensaje = "La cuenta del usuario {$usuario->name} ha sido reactivada.";
+        if ($usuario->rol === 'Dueño') {
+            $mensaje .= " Todos sus criaderos han sido reactivados.";
+        }
+
+        return redirect()->route('superadmin.usuarios.index', ['status' => 'inactivos'])->with('success', $mensaje);
+    }
 }

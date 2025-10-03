@@ -22,57 +22,55 @@ class ReporteController extends Controller
      */
     public function historialAlimentacionForm(Request $request)
     {
-        // --- 1. VALIDACIÓN BÁSICA ---
-        $request->validate([
-            'fecha_inicio' => 'nullable|date',
-            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
-        ], [
-            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser posterior o igual a la fecha de inicio.'
-        ]);
+        $user = Auth::user();
 
-        // --- 2. LÓGICA DE LÍMITES DE FECHA ---
-        $primerRegistro = RegistroAlimentacion::orderBy('created_at', 'asc')->first();
-        // La fecha más antigua que se puede buscar es la del primer registro, o hoy si no hay registros.
-        $fechaMinima = $primerRegistro ? Carbon::parse($primerRegistro->created_at) : Carbon::now();
-        // La fecha más reciente que se puede buscar es hoy.
+        // --- VALIDACIÓN Y MANEJO DE FECHAS ---
+        $request->validate(['fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio']);
         $fechaMaxima = Carbon::now();
-
-        // Obtenemos las fechas del request o usamos valores por defecto (última semana)
         $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : $fechaMaxima->copy();
         $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $fechaMaxima->copy()->subWeek();
+        if ($fechaFin->isFuture()) { $fechaFin = $fechaMaxima->copy(); }
 
-        // 3. CORRECCIÓN AUTOMÁTICA DE FECHAS ---
-        // Si el usuario elige una fecha futura, la ajustamos a hoy.
-        if ($fechaFin->isFuture()) {
-            $fechaFin = $fechaMaxima->copy();
+        // ▼▼▼ AQUÍ ESTÁ LA LÓGICA QUE FALTABA ▼▼▼
+        // 1. Obtenemos la lista de criaderos que pertenecen al dueño para el filtro
+        $criaderosDelDueño = $user->criaderos()->orderBy('nombre')->get();
+        $criaderoIdsDelDueño = $criaderosDelDueño->pluck('id');
+        // ▲▲▲ FIN DE LA LÓGICA QUE FALTABA ▲▲▲
+
+        // 2. Determinamos qué criadero(s) mostrar
+        $criaderoSeleccionadoId = $request->input('criadero_id', session('active_criadero_id'));
+        $criaderoIdsParaFiltrar = $criaderoIdsDelDueño; // Por defecto, todos los suyos
+
+        if ($criaderoSeleccionadoId && $criaderoSeleccionadoId !== 'todos') {
+            // Si se seleccionó uno específico (y es suyo), usamos solo ese
+            if ($criaderoIdsDelDueño->contains($criaderoSeleccionadoId)) {
+                $criaderoIdsParaFiltrar = [$criaderoSeleccionadoId];
+            }
         }
-        // Si el usuario elige una fecha muy antigua, la ajustamos a la del primer registro.
-        if ($fechaInicio->lessThan($fechaMinima)) {
-            $fechaInicio = $fechaMinima->copy();
-        }
-
-
-        // --- 4. LA CONSULTA (Usa las fechas ya validadas y corregidas) ---
-        $query = RegistroAlimentacion::query();
-        $query->with(['dispensador.estanque', 'tipoComida', 'iniciadoPor']);
         
+        // 3. Obtenemos los dispensadores que pertenecen a los criaderos seleccionados
+        $dispensadorIds = Dispensador::whereIn('criadero_id', $criaderoIdsParaFiltrar)->pluck('id_dispensador');
+
+        // 4. Construimos la consulta principal
+        $query = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+                    ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor']);
+
         $query->whereDate('created_at', '>=', $fechaInicio);
         $query->whereDate('created_at', '<=', $fechaFin);
 
         if ($request->filled('estanque_id')) {
-            $query->whereHas('dispensador.estanque', function ($q) use ($request) {
-                $q->where('id_estanque', $request->estanque_id);
-            });
+            $query->whereHas('dispensador.estanque', fn($q) => $q->where('id_estanque', $request->estanque_id));
         }
-
+        
         $registros = $query->latest()->paginate(25)->withQueryString();
-        $estanques = Estanque::orderBy('nombre_estanque')->get();
+        
+        $estanques = Estanque::whereIn('criadero_id', $criaderoIdsParaFiltrar)->orderBy('nombre_estanque')->get();
 
         return view('public.reportes.historial_alimentacion', [
             'registros' => $registros,
             'estanques' => $estanques,
+            'criaderosDelDueño' => $criaderosDelDueño, // <-- Pasamos la variable a la vista
             'request' => $request,
-            // Pasamos las fechas corregidas a la vista para que los campos del formulario se actualicen
             'fechaInicio' => $fechaInicio->toDateString(),
             'fechaFin' => $fechaFin->toDateString(),
         ]);
@@ -82,19 +80,21 @@ class ReporteController extends Controller
  */
     public function reporteCriaderosTabla()
     {
-        $criaderos = Criadero::with('owner')->get();
-        return view('public.reportes.criaderos_tabla', compact('criaderos'));
+        // 1. Buscamos todos los criaderos y cargamos la información de su dueño
+        $criaderos = Criadero::with('owner')->whereHas('owner')->get();
+
+        // 2. ▼▼▼ LA MAGIA ESTÁ AQUÍ ▼▼▼
+        // Usamos el método groupBy de las colecciones de Laravel para agruparlos.
+        $criaderosPorDueño = $criaderos->groupBy('owner.name');
+
+        // 3. Pasamos la nueva colección agrupada a la vista
+        return view('public.reportes.criaderos_tabla', compact('criaderosPorDueño'));
     }
     public function reporteCriaderosPdf()
     {
-        // 1. Obtenemos los datos que queremos mostrar en el reporte
         $criaderos = Criadero::with('owner')->get();
-        $fecha = \Carbon\Carbon::now()->format('d/m/Y');
-
-        // 2. Cargamos una vista especial para el PDF y le pasamos los datos
-        $pdf = PDF::loadView('public.reportes.pdf.criaderos', compact('criaderos', 'fecha'));
-
-        // 3. Devolvemos el PDF para que se descargue en el navegador
+        $fecha = Carbon::now()->format('d/m/Y');
+        $pdf = Pdf::loadView('public.reportes.pdf.criaderos', compact('criaderos', 'fecha'));
         return $pdf->download('reporte-criaderos-' . date('Y-m-d') . '.pdf');
     }
     public function index()
@@ -168,32 +168,41 @@ class ReporteController extends Controller
             'dispensadoresOnline'
         ));
     }
-    public function historialAlimentacionPdf(Request $request)
+     public function historialAlimentacionPdf(Request $request)
     {
-        // 1. Reutilizamos EXACTAMENTE la misma lógica de filtrado que en la página normal
-        $query = RegistroAlimentacion::query()
-                    ->with(['dispensador.estanque', 'tipoComida', 'iniciadoPor']);
+        // ▼▼▼ LÓGICA DE FILTRADO Y CONSULTA AÑADIDA AQUÍ ▼▼▼
+        $user = Auth::user();
+        $criaderoIdsDelDueño = $user->criaderos()->pluck('id');
+        
+        $criaderoSeleccionadoId = $request->input('criadero_id', session('active_criadero_id'));
+        $criaderoIdsParaFiltrar = $criaderoIdsDelDueño;
 
-        if ($request->filled('fecha_inicio')) {
-            $query->whereDate('created_at', '>=', $request->fecha_inicio);
+        if ($criaderoSeleccionadoId && $criaderoSeleccionadoId !== 'todos') {
+            if ($criaderoIdsDelDueño->contains($criaderoSeleccionadoId)) {
+                $criaderoIdsParaFiltrar = [$criaderoSeleccionadoId];
+            }
         }
-        if ($request->filled('fecha_fin')) {
-            $query->whereDate('created_at', '<=', $request->fecha_fin);
-        }
-        if ($request->filled('estanque_id')) {
-            $query->whereHas('dispensador.estanque', function ($q) use ($request) {
-                $q->where('id_estanque', $request->estanque_id);
-            });
-        }
+        
+        $dispensadorIds = Dispensador::whereIn('criadero_id', $criaderoIdsParaFiltrar)->pluck('id_dispensador');
 
+        $query = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+                    ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor']);
+
+        if ($request->filled('fecha_inicio')) { $query->whereDate('created_at', '>=', $request->fecha_inicio); }
+        if ($request->filled('fecha_fin')) { $query->whereDate('created_at', '<=', $request->fecha_fin); }
+        if ($request->filled('estanque_id')) { $query->whereHas('dispensador.estanque', fn($q) => $q->where('id_estanque', $request->estanque_id)); }
+        
         // Obtenemos TODOS los registros que coinciden, sin paginación
         $registros = $query->latest()->get();
         $fechaReporte = Carbon::now()->format('d/m/Y');
+        
+        // Variable para saber si debemos mostrar la columna 'Criadero'
+        $mostrarCriadero = ($request->criadero_id === 'todos');
 
-        // 2. Cargamos una vista especial para el PDF y le pasamos los datos
-        $pdf = Pdf::loadView('public.reportes.pdf.historial_alimentacion', compact('registros', 'fechaReporte'));
+        // Cargamos la vista del PDF y le pasamos los datos
+        $pdf = Pdf::loadView('public.reportes.pdf.historial_alimentacion', compact('registros', 'fechaReporte', 'mostrarCriadero'));
 
-        // 3. Devolvemos el PDF para que se descargue en el navegador
+        // Devolvemos el PDF para que se descargue
         return $pdf->download('historial-alimentacion-' . date('Y-m-d') . '.pdf');
     }
     // app/Http/Controllers/ReporteController.php

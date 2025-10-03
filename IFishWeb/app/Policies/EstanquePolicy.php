@@ -22,6 +22,29 @@ class EstanquePolicy
     }
 
     /**
+     * Determina si un usuario puede ver la LISTA de estanques.
+     *
+     * ▼▼▼ MÉTODO NUEVO ▼▼▼
+     */
+    public function viewAny(User $user): bool
+    {
+        // Permitimos que cualquier usuario logueado (Dueño) vea la página de la lista.
+        // El GlobalScope se encargará de filtrar qué estanques específicos ve.
+        return $user->rol === 'Dueño';
+    }
+
+    /**
+     * Determina si un usuario puede ver UN estanque específico.
+     *
+     * ▼▼▼ MÉTODO NUEVO ▼▼▼
+     */
+    public function view(User $user, Estanque $estanque): bool
+    {
+        // Un usuario puede ver un estanque si pertenece a uno de sus criaderos.
+        return $user->criaderos()->where('id', $estanque->criadero_id)->exists();
+    }
+
+    /**
      * Determina si un usuario puede crear un estanque.
      */
     public function create(User $user): bool
@@ -36,8 +59,8 @@ class EstanquePolicy
     public function update(User $user, Estanque $estanque): bool
     {
         // Un usuario puede actualizar un estanque si es el dueño
-        // Y si el estanque pertenece a su propio criadero.
-        return $user->rol === 'Dueño' && $user->criadero_id === $estanque->criadero_id;
+        // Y si el estanque pertenece a uno de sus criaderos.
+        return $user->rol === 'Dueño' && $user->criaderos()->where('id', $estanque->criadero_id)->exists();
     }
 
     /**
@@ -46,6 +69,6 @@ class EstanquePolicy
     public function delete(User $user, Estanque $estanque): bool
     {
         // Aplicamos la misma regla que para actualizar.
-        return $user->rol === 'Dueño' && $user->criadero_id === $estanque->criadero_id;
+        return $user->rol === 'Dueño' && $user->criaderos()->where('id', $estanque->criadero_id)->exists();
     }
 }

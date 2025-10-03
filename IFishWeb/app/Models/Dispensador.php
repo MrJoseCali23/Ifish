@@ -4,27 +4,23 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\HorarioAlimentacion;
-use App\Models\RegistroAlimentacion;
 use App\Scopes\CriaderoScope;
+
 class Dispensador extends Model
 {
     use HasFactory;
 
-    // --- CONFIGURACIÓN BÁSICA ---
     protected $table = 'Dispensadores';
     protected $primaryKey = 'id_dispensador';
 
     /**
      * Indica si el modelo debe tener timestamps (created_at y updated_at).
-     * Según tu diseño de base de datos, esta tabla no los tiene.
-     * @var bool
+     * Como nuestra tabla no los tiene, lo desactivamos.
      */
     public $timestamps = false;
 
     /**
      * Los atributos que se pueden asignar masivamente.
-     * @var array
      */
     protected $fillable = [
         'id_estanque',
@@ -33,40 +29,49 @@ class Dispensador extends Model
         'estado',
         'nivel_comida_actual_kg',
         'ultimo_reporte',
+        'comando_pendiente',
         'comando_valor',
         'criadero_id',
+        'current_tipo_comida_id', // <-- AÑADIDO AQUÍ
     ];
+
+    /**
+     * El "booting" method del modelo.
+     */
+    protected static function booted()
+    {
+        static::addGlobalScope(new CriaderoScope);
+    }
+
+    // --- RELACIONES ---
+
+    public function estanque()
+    {
+        return $this->belongsTo(Estanque::class, 'id_estanque', 'id_estanque');
+    }
+
     public function criadero()
     {
         return $this->belongsTo(Criadero::class, 'criadero_id');
     }
 
-    // --- DEFINICIÓN DE RELACIONES ---
-
-    /**
-     * Define la relación "pertenece a" con el Estanque.
-     * Un Dispensador pertenece a un Estanque.
-     */
-    public function estanque()
-    {
-        // El primer argumento es el Modelo relacionado (Estanque).
-        // El segundo es el nombre de la clave foránea en ESTA tabla (Dispensadores).
-        // El tercero es el nombre de la clave primaria en la OTRA tabla (Estanques).
-        return $this->belongsTo(Estanque::class, 'id_estanque', 'id_estanque');
-    }
     public function horarios()
     {
-        // El primer argumento es el Modelo relacionado.
-        // El segundo es el nombre de la clave foránea en la tabla de horarios.
-        // El tercero es la clave primaria de ESTA tabla (Dispensadores).
         return $this->hasMany(HorarioAlimentacion::class, 'id_dispensador', 'id_dispensador');
     }
+
     public function registrosAlimentacion()
     {
         return $this->hasMany(RegistroAlimentacion::class, 'id_dispensador', 'id_dispensador');
     }
-    protected static function booted()
+    
+    /**
+     * Obtiene el tipo de comida actualmente cargado en el dispensador.
+     *
+     * ▼▼▼ NUEVA RELACIÓN AÑADIDA ▼▼▼
+     */
+    public function tipoComidaActual()
     {
-        static::addGlobalScope(new CriaderoScope);
+        return $this->belongsTo(TipoComida::class, 'current_tipo_comida_id', 'id_tipo_comida');
     }
 }

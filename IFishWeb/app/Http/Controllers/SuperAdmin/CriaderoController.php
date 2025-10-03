@@ -16,93 +16,80 @@ class CriaderoController extends Controller
 {
     public function index(Request $request)
     {
-        $status = $request->query('status', 'activos'); // Por defecto, mostramos los activos
+        $status = $request->query('status', 'activos');
 
-        $query = Criadero::with('owner')->orderBy('nombre', 'asc');
+        // Empezamos la consulta, asegurando que siempre cargue la relación con el dueño.
+        $query = Criadero::with('owner')->whereHas('owner');
 
         if ($status == 'archivados') {
-            $query->where('estado', 'Archivado');
-        } else {
-            $query->where('estado', '!=', 'Archivado');
+            // Un criadero se considera "archivado" si su propio estado es 'Archivado'
+            // O si el estado de su dueño es 'Inactivo'.
+            $query->where(function ($q) {
+                $q->where('estado', 'Archivado')
+                  ->orWhereHas('owner', function ($subQ) {
+                      $subQ->where('estado', 'Inactivo');
+                  });
+            });
+        } else { // 'activos' y 'suspendidos'
+            // Un criadero se considera "activo" solo si su estado NO es 'Archivado'
+            // Y, muy importante, si su dueño también está 'Activo'.
+            $query->where('estado', '!=', 'Archivado')
+                  ->whereHas('owner', function ($q) {
+                      $q->where('estado', 'Activo');
+                  });
+        }
+        
+        // Mantenemos la lógica de ordenamiento que ya teníamos.
+        $sort = $request->query('sort', 'created_at');
+        $direction = $request->query('direction', 'desc');
+        if (in_array($sort, ['nombre', 'created_at'])) {
+            $query->orderBy($sort, $direction);
         }
 
-        $criaderos = $query->paginate(15)->withQueryString();
+        // Agrupamos los resultados por el nombre del dueño para la vista de acordeón.
+        $criaderosPorDueño = $query->get()->groupBy('owner.name');
 
-        return view('superadmin.criaderos.index', compact('criaderos', 'status'));
-    }
-    public function archive(Criadero $criadero)
-    {
-        DB::transaction(function () use ($criadero) {
-            // 1. Archivamos el criadero
-            $criadero->update(['estado' => 'Archivado']);
-
-            // 2. Desactivamos a TODOS sus usuarios asociados
-            $criadero->users()->update(['estado' => 'Inactivo']);
-        });
-
-        return redirect()->route('superadmin.criaderos.index')->with('success', "El criadero '{$criadero->nombre}' y todos sus usuarios han sido archivados.");
+        return view('superadmin.criaderos.index', compact('criaderosPorDueño', 'status'));
     }
 
-   public function restore(Criadero $criadero)
-    {
-        DB::transaction(function () use ($criadero) {
-            // 1. Restauramos el criadero
-            $criadero->update(['estado' => 'Activo']);
-
-            // 2. Reactivamos SOLAMENTE al usuario dueño.
-            // Los trabajadores pueden ser reactivados manualmente.
-            if ($criadero->owner) {
-                $criadero->owner->update(['estado' => 'Activo']);
-            }
-        });
-
-        return redirect()->route('superadmin.criaderos.index', ['status' => 'archivados'])->with('success', "El criadero '{$criadero->nombre}' y su dueño han sido restaurados.");
-    }
     public function create()
     {
-        // Buscamos usuarios que puedan ser dueños (Rol 'Dueño' y que no tengan ya un criadero)
-        $dueñosDisponibles = User::where('rol', 'Dueño')->whereNull('criadero_id')->get();
-        return view('superadmin.criaderos.create', compact('dueñosDisponibles'));
+
+        $dueños = User::where('rol', 'Dueño')
+                      ->where('estado', 'Activo')
+                      ->orderBy('name')
+                      ->get();
+        
+        return view('superadmin.criaderos.create', compact('dueños'));
     }
+
 
     public function store(Request $request)
     {
         $request->validate([
-            'nombre_criadero' => 'required|string|max:255',
+            'nombre' => 'required|string|max:255|unique:criaderos,nombre',
+            'user_id' => 'required|exists:users,id', // Validamos que el dueño seleccionado exista
             'ubicacion' => 'nullable|string|max:255',
-            'name' => 'required|string|max:255',
-            'email' => 'required|string|email|max:255|unique:users,email',
-            'password' => ['required', 'confirmed', \Illuminate\Validation\Rules\Password::defaults()],
         ]);
 
-        DB::transaction(function () use ($request) {
-            // 1. Creamos el nuevo usuario con el rol de "Dueño"
-            $dueño = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'rol' => 'Dueño',
-            ]);
+        Criadero::create([
+            'nombre' => $request->nombre,
+            'ubicacion' => $request->ubicacion,
+            'user_id' => $request->user_id, // Asignamos el dueño seleccionado en el formulario
+            'estado' => 'Activo', // Por defecto, un nuevo criadero está activo
+        ]);
 
-            // 2. Creamos el criadero y lo asignamos al dueño que acabamos de crear
-            $criadero = Criadero::create([
-                'nombre' => $request->nombre_criadero,
-                'ubicacion' => $request->ubicacion,
-                'user_id' => $dueño->id,
-            ]);
-
-            // 3. Finalmente, actualizamos al usuario para darle su criadero_id
-            $dueño->criadero_id = $criadero->id;
-            $dueño->save();
-        });
-
-        return redirect()->route('superadmin.criaderos.index')->with('success', 'Criadero y Dueño creados exitosamente.');
+        return redirect()->route('superadmin.criaderos.index')->with('success', 'Nuevo criadero asignado exitosamente.');
     }
 
     public function edit(Criadero $criadero)
     {
-        // Buscamos todos los dueños, incluyendo el actual, por si se quiere cambiar
-        $dueños = User::where('rol', 'Dueño')->get();
+        $dueños = User::where('rol', 'Dueño')
+                      ->where('estado', 'Activo')
+                      ->orWhere('id', $criadero->user_id)
+                      ->orderBy('name')
+                      ->get();
+
         return view('superadmin.criaderos.edit', compact('criadero', 'dueños'));
     }
 
@@ -112,53 +99,34 @@ class CriaderoController extends Controller
             'nombre' => 'required|string|max:255',
             'user_id' => 'required|exists:users,id',
             'ubicacion' => 'nullable|string|max:255',
-            'estado' => 'required|in:Activo,Inactivo,Suspendido',
+            
+            // ▼▼▼ AQUÍ ESTÁ LA CORRECCIÓN ▼▼▼
+            // Añadimos 'Archivado' a la lista de valores permitidos.
+            'estado' => 'required|in:Activo,Suspendido,Archivado',
         ]);
 
         DB::transaction(function () use ($request, $criadero) {
             // Desasignamos el criadero del dueño antiguo si ha cambiado
             if ($criadero->user_id != $request->user_id) {
-                User::find($criadero->user_id)->update(['criadero_id' => null]);
+                // Esta lógica habría que refinarla para el caso multi-criadero,
+                // pero por ahora la dejamos así.
             }
 
             // Actualizamos el criadero
             $criadero->update($request->all());
 
             // Asignamos el criadero al nuevo dueño
-            User::find($request->user_id)->update(['criadero_id' => $criadero->id]);
+            // Esta lógica también habría que revisarla.
         });
 
         return redirect()->route('superadmin.criaderos.index')->with('success', 'Criadero actualizado exitosamente.');
     }
 
-    public function showAssignForm(Criadero $criadero)
+    public function destroy(Criadero $criadero)
     {
-        // Buscamos solo los dispensadores que NO tienen un criadero_id asignado.
-        $dispensadoresSinAsignar = Dispensador::whereNull('criadero_id')->get();
-
-        return view('superadmin.criaderos.assign', compact('criadero', 'dispensadoresSinAsignar'));
-    }
-
-    /**
-     * Procesa la asignación de un dispensador a un criadero.
-     */
-    public function assignDispenser(Request $request, Criadero $criadero)
-    {
-        $request->validate([
-            'dispensador_id' => 'required|exists:Dispensadores,id_dispensador'
-        ]);
-
-        $dispensador = Dispensador::find($request->dispensador_id);
-        $dispensador->update(['criadero_id' => $criadero->id]);
-
-        // ▼▼▼ LÓGICA AÑADIDA PARA EL HISTORIAL ▼▼▼
-        DispensadorEvento::create([
-            'dispensador_id' => $dispensador->id_dispensador,
-            'tipo_evento' => 'asignacion_criadero',
-            'descripcion' => "Dispensador asignado al criadero '{$criadero->nombre}'.",
-            'user_id' => Auth::id(), // El Super Admin que realizó la acción
-        ]);
-
-        return redirect()->route('superadmin.criaderos.index')->with('success', "Dispensador asignado a {$criadero->nombre} exitosamente.");
+        // Gracias a onDelete('cascade'), al borrar el criadero, se borrarán
+        // todos sus usuarios, estanques, dispensadores, etc.
+        $criadero->delete();
+        return redirect()->route('superadmin.criaderos.index')->with('success', 'Criadero y todos sus datos asociados han sido eliminados.');
     }
 }

@@ -20,7 +20,7 @@ class RegisteredUserController extends Controller
     /**
      * Display the registration view.
      */
-    public function create(): View
+    public function create()
     {
         return view('auth.register');
     }
@@ -38,35 +38,15 @@ class RegisteredUserController extends Controller
             'password' => ['required', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        // Usamos una transacción para asegurar que ambas operaciones (crear usuario y criadero)
-        // se completen con éxito. Si una falla, la otra se deshace (rollback).
-        $user = DB::transaction(function () use ($request) {
-
-            // 1. Creamos el nuevo usuario con el rol de "Dueño"
-            $newUser = User::create([
-                'name' => $request->name,
-                'email' => $request->email,
-                'password' => Hash::make($request->password),
-                'rol' => 'Dueño', // Asignamos el nuevo rol por defecto
-            ]);
-
-            // 2. Creamos un criadero para este nuevo usuario
-            $newCriadero = Criadero::create([
-                'nombre' => 'Criadero de ' . $newUser->name, // Creamos un nombre por defecto
-                'user_id' => $newUser->id, // Lo asignamos al usuario que acabamos de crear
-            ]);
-
-            // 3. Actualizamos al usuario para "etiquetarlo" con el ID de su nuevo criadero
-            $newUser->criadero_id = $newCriadero->id;
-            $newUser->save();
-
-            return $newUser;
-        });
+        $user = User::create([
+            'name' => $request->name,
+            'email' => $request->email,
+            'password' => Hash::make($request->password),
+            'rol' => 'Dueño', // Todo el que se registra es un Dueño
+        ]);
 
         event(new Registered($user));
-
         Auth::login($user);
-
         return redirect(RouteServiceProvider::HOME);
     }
 }
