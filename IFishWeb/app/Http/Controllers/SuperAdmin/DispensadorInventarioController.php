@@ -78,13 +78,22 @@ class DispensadorInventarioController extends Controller
                          ->with('success', 'Dispensador añadido al inventario exitosamente.');
     }
     public function edit(Dispensador $dispensadores_inventario)
-{
-    $dispensador = $dispensadores_inventario;
-    $criaderos = Criadero::where('estado', '!=', 'Archivado')->get();
-    
-    // Ya NO buscamos los tipos de comida aquí.
-    return view('superadmin.dispensadores.edit', compact('dispensador', 'criaderos'));
-}
+    {
+        $dispensador = $dispensadores_inventario;
+        
+        // ▼▼▼ AQUÍ ESTÁ LA LÓGICA QUE FALTABA ▼▼▼
+        // Buscamos todos los dueños que tengan al menos un criadero y cargamos esos criaderos.
+        $dueñosConCriaderos = User::where('rol', 'Dueño')
+                                  ->whereHas('criaderos')
+                                  ->with('criaderos')
+                                  ->orderBy('name')
+                                  ->get();
+        
+        // También obtenemos los tipos de comida para el otro menú desplegable.
+        $tiposComida = TipoComida::orderBy('nombre_comida')->get();
+
+        return view('superadmin.dispensadores.edit', compact('dispensador', 'dueñosConCriaderos', 'tiposComida'));
+    }
 
 
     public function update(Request $request, Dispensador $dispensadores_inventario)

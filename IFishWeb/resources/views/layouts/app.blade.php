@@ -275,11 +275,16 @@
             width: 100%;
             height: 100%;
             background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
-            transition: 0.5s;
+            transition: left 0.3s ease;
         }
 
         .content-wrapper.loading::before {
             left: 100%;
+        }
+
+        /* Desactivar animación cuando un modal está activo */
+        .modal-open .content-wrapper::before {
+            display: none;
         }
 
         /* Estilo para alertas de Bootstrap */
@@ -303,7 +308,6 @@
             color: white;
         }
 
-        /* Botón de cierre en alertas */
         .alert .btn-close {
             filter: brightness(0) invert(1);
         }
@@ -324,6 +328,9 @@
             .content-wrapper {
                 background: #2d3748;
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+            }
+            .content-wrapper::before {
+                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
             }
             .criadero-info {
                 background: linear-gradient(135deg, #4b5563, #2d3748);
@@ -531,19 +538,6 @@
         </div>
     </div>
 
-    <!-- Notificaciones con Bootstrap -->
-    <!-- @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar notificación"></button>
-        </div>
-    @endif
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Cerrar notificación"></button>
-        </div>
-    @endif -->
 
     <!-- Contenido principal -->
     <div class="main-content">
@@ -553,6 +547,9 @@
             </div>
         </div>
     </div>
+
+    <!-- Modales -->
+    @stack('modals')
 
     <!-- Scripts -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js" integrity="sha384-C6RzsynM9kWDrMNeT87bh95OGNyZPhcTNXj1NW7RuBCsyN/o0jlpcV8Qyq46cDfL" crossorigin="anonymous"></script>
@@ -571,11 +568,18 @@
             contentWrapper.classList.add('loading');
             setTimeout(() => {
                 contentWrapper.classList.remove('loading');
-            }, 1000);
+            }, 300);
 
             // Inicializar tooltips
             const tooltipTriggerList = document.querySelectorAll('[data-bs-toggle="tooltip"]');
             const tooltipList = [...tooltipTriggerList].map(tooltipTriggerEl => new bootstrap.Tooltip(tooltipTriggerEl));
+
+            // Desactivar animación de carga al abrir un modal
+            document.querySelectorAll('.modal').forEach(modal => {
+                modal.addEventListener('show.bs.modal', () => {
+                    contentWrapper.classList.remove('loading');
+                });
+            });
         });
     </script>
     @stack('scripts')

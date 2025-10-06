@@ -6,7 +6,9 @@
 {{-- PANEL DE ESTADÍSTICAS PARA EL SUPER ADMIN --}}
 {{-- =============================================================== --}}
 @if ($rol === 'Admin')
-    <h2 class="text-primary fw-bold">Panel de Control del Super Administrador</h2>
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-bar-chart-line nav-icon"></i>
+        Panel de Control del Administrador</h2>
     <p class="text-muted">Una vista global del estado y crecimiento de la plataforma iFish.</p>
     
     <div class="row g-4 mt-3 mb-4">
@@ -42,7 +44,9 @@
 {{-- PANEL DE ESTADÍSTICAS PARA EL DUEÑO DE CRIADERO --}}
 {{-- =============================================================== --}}
 @if ($rol === 'Dueño')
-    <h2 class="text-primary fw-bold">Panel de Control de tu Criadero</h2>
+    <h2 class="text-primary fw-bold">
+        <i class="bi bi-bar-chart-line nav-icon"></i>
+        Panel de Control de tu Criadero</h2>
     <p class="text-muted">Un resumen del estado y rendimiento de tu operación.</p>
 
     <div class="row g-4 mt-3 mb-4">

@@ -20,6 +20,18 @@
                     </div>
                 </div>
             </div>
+            <div class="col-md-6 col-lg-4">
+                <div class="card h-100 shadow-sm">
+                    <div class="card-body d-flex flex-column">
+                        <div class="text-primary fs-2 mb-3"><i class="bi bi-pie-chart-fill"></i></div>
+                        <h5 class="card-title">Reporte de Consumo</h5>
+                        <p class="card-text text-muted">Analiza qué tipos de comida se están consumiendo más en tu criadero.</p>
+                        <div class="mt-auto">
+                            <a href="{{ route('reportes.consumo_comida') }}" class="btn btn-primary">Generar Reporte</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
         @endif
 
         {{-- Tarjeta para el Reporte de Criaderos (Visible SOLO para Super Admin) --}}

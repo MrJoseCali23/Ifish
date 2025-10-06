@@ -66,9 +66,6 @@ class UsuarioController extends Controller
                 'ubicacion' => $request->ubicacion,
                 'user_id' => $dueño->id,
             ]);
-
-            $dueño->criadero_id = $criadero->id;
-            $dueño->save();
         });
 
         return redirect()->route('superadmin.usuarios.index')->with('success', 'Dueño y su primer criadero han sido creados exitosamente.');

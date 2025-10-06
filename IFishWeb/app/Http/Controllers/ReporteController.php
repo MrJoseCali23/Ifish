@@ -10,6 +10,8 @@ use App\Models\Criadero;
 use Barryvdh\DomPDF\Facade\Pdf; 
 use Carbon\Carbon;
 use App\Models\Dispensador;
+use Illuminate\Support\Facades\DB;
+
 class ReporteController extends Controller
 {
     /**
@@ -234,5 +236,61 @@ class ReporteController extends Controller
         $dispensadores = \App\Models\Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)->orderBy('modelo')->get();
 
         return view('public.reportes.historial_dispensador', compact('eventos', 'dispensadores', 'request'));
+    }
+    public function reporteConsumoComida(Request $request)
+    {
+        // --- Lógica de Fechas con Validaciones ---
+        $request->validate(['fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio']);
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : Carbon::now();
+        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $fechaFin->copy()->subMonth(); // Por defecto, el último mes
+
+        // --- Consulta Principal ---
+        $criaderoActivoId = session('active_criadero_id');
+        $dispensadorIds = Dispensador::where('criadero_id', $criaderoActivoId)->pluck('id_dispensador');
+
+        $consumoPorTipo = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->whereBetween('Registros_Alimentacion.created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()])
+            ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
+            ->groupBy('Tipos_Comida.nombre_comida')
+            ->orderBy('total_consumido', 'desc')
+            ->get();
+
+        // Preparamos los datos para el gráfico de pastel
+        $labelsGrafico = $consumoPorTipo->pluck('nombre_comida');
+        $dataGrafico = $consumoPorTipo->pluck('total_consumido');
+
+        return view('public.reportes.consumo_comida', [
+            'consumoPorTipo' => $consumoPorTipo,
+            'labelsGrafico' => $labelsGrafico,
+            'dataGrafico' => $dataGrafico,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
+        ]);
+    }
+    public function reporteConsumoComidaPdf(Request $request)
+    {
+        // 1. Reutilizamos la misma lógica de filtrado
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : Carbon::now();
+        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $fechaFin->copy()->subMonth();
+
+        $criaderoActivoId = session('active_criadero_id');
+        $dispensadorIds = Dispensador::where('criadero_id', $criaderoActivoId)->pluck('id_dispensador');
+
+        $consumoPorTipo = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->whereBetween('Registros_Alimentacion.created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()])
+            ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
+            ->groupBy('Tipos_Comida.nombre_comida')
+            ->orderBy('total_consumido', 'desc')
+            ->get();
+
+        $fechaReporte = Carbon::now()->format('d/m/Y');
+
+        // 2. Cargamos la vista especial para el PDF
+        $pdf = Pdf::loadView('public.reportes.pdf.consumo_comida', compact('consumoPorTipo', 'fechaReporte', 'fechaInicio', 'fechaFin'));
+
+        // 3. Devolvemos el PDF para que se descargue
+        return $pdf->download('reporte-consumo-comida-' . date('Y-m-d') . '.pdf');
     }
 }

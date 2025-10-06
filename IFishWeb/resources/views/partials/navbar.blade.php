@@ -12,16 +12,16 @@
         <hr class="sidebar-divider my-3">
         <div class="sidebar-heading text-white-75 small text-uppercase fw-semibold">Gestión de Plataforma</div>
 
-        <a class="nav-link @if(request()->routeIs('superadmin.criaderos.*')) active @endif" href="{{ route('superadmin.criaderos.index') }}" aria-label="Gestionar Criaderos" data-bs-toggle="tooltip" title="Administrar los criaderos registrados">
-            <i class="bi bi-building nav-icon"></i>
-            <span>Gestionar Criaderos</span>
-        </a>
         <a class="nav-link @if(request()->routeIs('superadmin.usuarios.*')) active @endif" href="{{ route('superadmin.usuarios.index') }}" aria-label="Gestionar Usuarios" data-bs-toggle="tooltip" title="Administrar usuarios de la plataforma">
             <i class="bi bi-people-fill nav-icon"></i>
             <span>Gestionar Usuarios</span>
         </a>
-        <a class="nav-link @if(request()->routeIs(['superadmin.dispensadores-inventario.index', 'superadmin.dispensadores-inventario.create', 'superadmin.dispensadores-inventario.edit'])) active @endif" href="{{ route('superadmin.dispensadores-inventario.index') }}">
-            <i class="bi bi-box-seam-fill"></i>
+         <a class="nav-link @if(request()->routeIs('superadmin.criaderos.*')) active @endif" href="{{ route('superadmin.criaderos.index') }}" aria-label="Gestionar Criaderos" data-bs-toggle="tooltip" title="Administrar los criaderos registrados">
+            <i class="bi bi-building nav-icon"></i>
+            <span>Gestionar Criaderos</span>
+        </a>
+        <a class="nav-link @if(request()->routeIs(['superadmin.dispensadores-inventario.index', 'superadmin.dispensadores-inventario.create', 'superadmin.dispensadores-inventario.edit'])) active @endif" href="{{ route('superadmin.dispensadores-inventario.index') }}" aria-label="Inventario de Dispensadores" data-bs-toggle="tooltip" title="Ver y gestionar inventario de dispensadores">
+            <i class="bi bi-box-seam-fill nav-icon"></i>
             <span>Inventario Dispensadores</span>
         </a>
         <a class="nav-link @if(request()->routeIs('superadmin.dispensadores-inventario.archivados')) active @endif" href="{{ route('superadmin.dispensadores-inventario.archivados') }}" aria-label="Dispensadores Archivados" data-bs-toggle="tooltip" title="Ver dispensadores archivados">

@@ -22,13 +22,12 @@
         <table class="table table-hover align-middle">
             <thead class="table-light">
                 <tr>
-                    <th>#</th><th>Nombre</th><th>Email</th><th>Rol</th><th class="text-end">Acciones</th>
+                    <th>Nombre</th><th>Email</th><th>Rol</th><th class="text-end">Acciones</th>
                 </tr>
             </thead>
             <tbody>
                 @forelse($usuarios as $usuario)
                     <tr>
-                        <td>{{ $usuario->id }}</td>
                         <td>{{ $usuario->name }}</td>
                         <td>{{ $usuario->email }}</td>
                         <td>

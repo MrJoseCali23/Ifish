@@ -13,7 +13,7 @@ use App\Http\Controllers\SuperAdmin\CriaderoController;
 use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CriaderoSelectorController;
-use App\Http\Controllers\Dueño\CriaderoController as DueñoCriaderoController;
+// use App\Http\Controllers\Dueño\CriaderoController as DueñoCriaderoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -38,13 +38,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/seleccionar-criadero', [CriaderoSelectorController::class, 'showSelection'])->name('criaderos.select');
     Route::get('/seleccionar-criadero/{criadero}', [CriaderoSelectorController::class, 'selectCriadero'])->name('criaderos.set-active');
     
-    // CRUD para que el Dueño gestione la lista de sus propios criaderos
-    Route::resource('mis-criaderos', DueñoCriaderoController::class)->names('dueño.criaderos');
+    // // CRUD para que el Dueño gestione la lista de sus propios criaderos
+    // Route::resource('mis-criaderos', DueñoCriaderoController::class)->names('dueño.criaderos');
 });
 
 
 // --- RUTAS PROTEGIDAS QUE SÍ REQUIEREN UN CRIADERO ACTIVO ---
-// ▼▼▼ AQUÍ ESTÁ EL CAMBIO PRINCIPAL ▼▼▼
 // A tu grupo de rutas principal le hemos añadido nuestro nuevo "guardia": 'criadero.selected'.
 Route::middleware(['auth', 'criadero.selected'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
@@ -64,6 +63,7 @@ Route::middleware(['auth', 'criadero.selected'])->group(function () {
     Route::resource('horarios', HorarioAlimentacionController::class);
     
     // Acciones personalizadas
+    
     Route::post('dispensadores/{dispensadore}/alimentar', [DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
     
     // Grupo de rutas para la sección de Reportes
@@ -75,6 +75,8 @@ Route::middleware(['auth', 'criadero.selected'])->group(function () {
         Route::get('/salud-plataforma', 'reporteSaludPlataforma')->name('salud_plataforma');
         Route::get('/historial-alimentacion/pdf', 'historialAlimentacionPdf')->name('historial_alimentacion.pdf');
         Route::get('/historial-dispensador', 'reporteHistorialDispensador')->name('historial_dispensador');
+        Route::get('/consumo-comida', 'reporteConsumoComida')->name('consumo_comida');
+        Route::get('/consumo-comida/pdf', 'reporteConsumoComidaPdf')->name('consumo_comida.pdf');
     });
 });
 

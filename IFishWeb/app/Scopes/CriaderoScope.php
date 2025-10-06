@@ -22,21 +22,25 @@ class CriaderoScope implements Scope
 
             // --- INICIO DE LA LÓGICA INTELIGENTE ---
 
-            // CASO 1: El modelo tiene una columna 'criadero_id' directa
-            // (Funciona para Estanques, Dispensadores, Tipos de Comida)
-            if (Schema::hasColumn($model->getTable(), 'criadero_id')) {
-                $builder->whereIn($model->getTable() . '.criadero_id', $criaderoIds);
-            } 
+            // CASO 1: Caso especial para TipoComida (Debe ver las suyas Y las globales)
+            if ($model instanceof \App\Models\TipoComida) {
+                $builder->where(function ($query) use ($criaderoIds) {
+                    $query->whereIn('criadero_id', $criaderoIds) // Las que pertenecen a sus criaderos
+                          ->orWhereNull('criadero_id');       // O las que son globales
+                });
+            }
             
             // CASO 2: Caso especial para HorarioAlimentacion (relación indirecta)
             elseif ($model instanceof \App\Models\HorarioAlimentacion) {
-                // Usamos whereHas para filtrar basado en la relación 'dispensador'
                 $builder->whereHas('dispensador', function ($query) use ($criaderoIds) {
                     $query->whereIn('criadero_id', $criaderoIds);
                 });
             }
             
-            // Aquí podríamos añadir más casos especiales para otros modelos en el futuro
+            // CASO 3: El modelo tiene una columna 'criadero_id' directa (Estanques, Dispensadores)
+            elseif (Schema::hasColumn($model->getTable(), 'criadero_id')) {
+                $builder->whereIn($model->getTable() . '.criadero_id', $criaderoIds);
+            }
             
             // --- FIN DE LA LÓGICA INTELIGENTE ---
         }

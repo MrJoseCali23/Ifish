@@ -3,7 +3,9 @@
 @section('title', 'Programación de Horarios - iFish')
 @section('content')
     <div class="d-flex justify-content-between align-items-center mb-4">
-        <h2 class="text-primary fw-bold">🕒 Programación de Horarios por Dispensador</h2>
+        <h2 class="text-primary fw-bold">
+            <i class="bi bi-clock-history nav-icon"></i>
+            Programación de Horarios por Dispensador</h2>
         <a href="{{ route('horarios.create') }}" class="btn btn-success">
             <i class="bi bi-plus-circle me-1"></i> Nuevo Horario
         </a>
