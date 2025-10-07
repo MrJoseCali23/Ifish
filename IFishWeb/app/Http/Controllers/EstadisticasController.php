@@ -17,7 +17,7 @@ class EstadisticasController extends Controller
     public function index(Request $request)
     {
         $user = Auth::user();
-        $viewData = []; // Usaremos este array para pasar todos los datos a la vista
+        $viewData = []; 
         
         $rol = $user->rol;
 
@@ -44,8 +44,6 @@ class EstadisticasController extends Controller
             $viewData['labelsCrecimiento'] = $crecimiento->pluck('mes');
             $viewData['dataCrecimiento'] = $crecimiento->pluck('total');
 
-            // ▼▼▼ CAMBIO AQUÍ ▼▼▼
-            // Pasamos tanto la variable 'rol' suelta como el array 'data'.
             return view('public.estadisticas.index', ['rol' => $rol, 'data' => $viewData]);
         }
         
@@ -92,7 +90,6 @@ class EstadisticasController extends Controller
             $viewData['fechaInicio'] = $fechaInicio->toDateString();
             $viewData['fechaFin'] = $fechaFin->toDateString();
 
-            // ▼▼▼ Y CAMBIO AQUÍ ▼▼▼
             return view('public.estadisticas.index', ['rol' => $rol, 'data' => $viewData]);
         }
 

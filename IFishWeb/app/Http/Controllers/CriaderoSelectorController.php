@@ -28,15 +28,12 @@ class CriaderoSelectorController extends Controller
         if ($criadero->user_id !== Auth::id()) {
             abort(403, 'Acción no autorizada.');
         }
-
-        // ▼▼▼ NUEVA REGLA DE SEGURIDAD ▼▼▼
-        // Seguridad #2: Nos aseguramos de que el criadero esté 'Activo'.
+        // Seguridad #2: Verificamos que el criadero esté activo.
         if ($criadero->estado !== 'Activo') {
             return redirect()->route('criaderos.select')
                    ->with('error', "No se puede acceder al criadero '{$criadero->nombre}' porque no está activo.");
         }
 
-        // ¡La parte mágica! Guardamos el ID del criadero en la sesión del usuario.
         session(['active_criadero_id' => $criadero->id]);
 
         return redirect()->route('dashboard');

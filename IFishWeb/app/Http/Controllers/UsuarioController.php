@@ -10,6 +10,11 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\Rules;
+use Illuminate\Support\Str;
+use App\Mail\UserInvitationMail; 
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use App\Mail\ResetPasswordMail;
 
 class UsuarioController extends Controller
 {
@@ -33,42 +38,53 @@ class UsuarioController extends Controller
     }
 
     /**
-     * Muestra el formulario para crear un nuevo usuario.
+     * Muestra el formulario para invitar a un nuevo Dueño.
      */
     public function create()
     {
+        // La vista ahora es para invitar, no necesita datos extra.
         return view('usuarios.create');
     }
 
     /**
-     * Guarda un nuevo usuario en la base de datos.
+     * Guarda el nuevo Dueño sin contraseña, le genera un token de invitación,
+     * y crea su primer criadero.
      */
     public function store(Request $request)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'password' => ['required', 'confirmed', Rules\Password::defaults()],
             'nombre_criadero' => ['required', 'string', 'max:255', 'unique:criaderos,nombre'],
             'ubicacion' => ['nullable', 'string', 'max:255'],
         ]);
 
-        DB::transaction(function () use ($request) {
-            $dueño = User::create([
+        // Usamos una transacción para asegurar que todo se complete con éxito.
+        $dueño = DB::transaction(function () use ($request) {
+            // 1. Creamos el usuario con contraseña nula y un token de invitación
+            $newUser = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => Hash::make($request->password),
+                'password' => null, 
                 'rol' => 'Dueño',
+                'invitation_token' => Str::random(60), // Generamos el token secreto
+                'invitation_expires_at' => now()->addDays(2), // El enlace expira en 48 horas
             ]);
 
-            $criadero = Criadero::create([
+            // 2. Creamos su primer criadero
+            Criadero::create([
                 'nombre' => $request->nombre_criadero,
                 'ubicacion' => $request->ubicacion,
-                'user_id' => $dueño->id,
+                'user_id' => $newUser->id,
             ]);
+
+            return $newUser;
         });
 
-        return redirect()->route('superadmin.usuarios.index')->with('success', 'Dueño y su primer criadero han sido creados exitosamente.');
+        // 3. ▼▼▼ ENVIAMOS EL CORREO DE INVITACIÓN ▼▼▼
+        Mail::to($dueño->email)->send(new UserInvitationMail($dueño));
+
+        return redirect()->route('superadmin.usuarios.index')->with('success', 'Invitación enviada exitosamente. El usuario recibirá un correo para establecer su contraseña.');
     }
 
     /**
@@ -76,30 +92,32 @@ class UsuarioController extends Controller
      */
     public function edit(User $usuario)
     {
-        // Cargar los criaderos asignados al usuario (solo para Dueños)
-        $criaderos = $usuario->rol === 'Dueño' ? $usuario->criaderos()->orderBy('nombre')->get() : collect();
-        return view('usuarios.edit', compact('usuario', 'criaderos'));
+
+        $criaderosDelUsuario = $usuario->criaderos()->orderBy('nombre')->get();
+
+         return view('usuarios.edit', compact('usuario', 'criaderosDelUsuario'));
     }
 
     /**
-     * Actualiza un usuario en la base de datos.
+     * Actualiza un usuario en la base de datos (sin tocar la contraseña).
      */
     public function update(Request $request, User $usuario)
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($usuario->id)],
-            'rol' => ['required', 'in:Admin,Dueño'],
+            // La validación para 'rol' se elimina porque ya no es editable.
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
         ]);
 
-        $data = $request->only('name', 'email', 'rol');
+        // Preparamos los datos para actualizar (solo los permitidos).
+        $data = $request->only('name', 'email');
+        
+        // Solo actualizamos la contraseña si el usuario escribió una nueva.
         if ($request->filled('password')) {
             $data['password'] = Hash::make($request->password);
         }
-        if ($request->rol === 'Admin') {
-            $data['criadero_id'] = null; // Limpia criadero_id si cambia a Admin
-        }
+        
         $usuario->update($data);
 
         return redirect()->route('superadmin.usuarios.index')->with('success', '¡Usuario actualizado exitosamente!');
@@ -146,4 +164,25 @@ class UsuarioController extends Controller
 
         return redirect()->route('superadmin.usuarios.index', ['status' => 'inactivos'])->with('success', $mensaje);
     }
+
+    /**
+     * Envía un enlace de reseteo de contraseña al usuario.
+     */
+    public function sendPasswordReset(Request $request, User $usuario)
+    {
+        // Generamos el token de reset
+        $token = Password::broker()->createToken($usuario);
+
+        // Construimos la URL del reset
+        $resetUrl = url(route('password.reset', [
+            'token' => $token,
+            'email' => $usuario->email,
+        ], false));
+
+        // Enviamos el correo con tu Mailable personalizado
+        Mail::to($usuario->email)->send(new ResetPasswordMail($usuario, $resetUrl));
+
+        return back()->with('success', 'Se ha enviado un enlace de recuperación de contraseña al usuario.');
+    }
+
 }

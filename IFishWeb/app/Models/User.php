@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Notifications\CustomResetPasswordNotification;
 
 class User extends Authenticatable
 {
@@ -24,6 +25,8 @@ class User extends Authenticatable
         'rol',
         'estado',
         // La columna 'criadero_id' ha sido eliminada.
+        'invitation_token',
+        'invitation_expires_at',
     ];
 
     /**
@@ -34,6 +37,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token',
     ];
 
     /**
@@ -43,6 +47,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'invitation_expires_at' => 'datetime', 
     ];
 
     /**
@@ -52,5 +57,9 @@ class User extends Authenticatable
     {
         // Esta es la nueva relación "Uno a Muchos".
         return $this->hasMany(Criadero::class, 'user_id');
+    }
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new CustomResetPasswordNotification($token));
     }
 }

@@ -37,12 +37,11 @@ class HorarioAlimentacionController extends Controller
     {
         $criaderoActivoId = session('active_criadero_id');
         
-        // ▼▼▼ LÓGICA MEJORADA ▼▼▼
         // Buscamos solo los dispensadores que están en un estanque Y que ya tienen un tipo de comida asignado.
         $dispensadores = Dispensador::with('estanque', 'tipoComidaActual')
                                 ->where('criadero_id', $criaderoActivoId)
                                 ->whereNotNull('id_estanque')
-                                ->whereNotNull('current_tipo_comida_id') // ¡La nueva condición clave!
+                                ->whereNotNull('current_tipo_comida_id') 
                                 ->get();
 
         if ($dispensadores->isEmpty()) {

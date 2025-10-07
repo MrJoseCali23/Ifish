@@ -13,6 +13,7 @@ use App\Http\Controllers\SuperAdmin\CriaderoController;
 use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CriaderoSelectorController;
+use App\Http\Controllers\InvitationController;
 // use App\Http\Controllers\Dueño\CriaderoController as DueñoCriaderoController;
 
 /*
@@ -27,6 +28,8 @@ Route::get('/', function () {
 })->name('inicio');
 Route::view('/ayuda', 'ayuda')->name('ayuda');
 
+Route::get('/invitacion/aceptar/{token}', [InvitationController::class, 'accept'])->name('invitation.accept');
+Route::post('/invitacion/establecer-contraseña/{token}', [InvitationController::class, 'setPassword'])->name('invitation.set-password');
 
 // --- RUTAS DE AUTENTICACIÓN ---
 require __DIR__.'/auth.php';
@@ -96,4 +99,6 @@ Route::middleware(['auth', 'isadmin'])->prefix('superadmin')->name('superadmin.'
     Route::get('criaderos/{criadero}/assign', [CriaderoController::class, 'showAssignForm'])->name('criaderos.assignForm');
     Route::post('criaderos/{criadero}/assign', [CriaderoController::class, 'assignDispenser'])->name('criaderos.assign');
     Route::post('usuarios/{usuario}/restore', [UsuarioController::class, 'restore'])->name('usuarios.restore');
+    Route::post('usuarios/{usuario}/send-reset-link', [UsuarioController::class, 'sendPasswordReset'])->name('usuarios.send-reset-link');
+    
 });

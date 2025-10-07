@@ -57,7 +57,7 @@ class EstanqueController extends Controller
             'nombre_estanque' => $request->nombre_estanque,
             'ubicacion' => $request->ubicacion,
             'dimensiones_metros' => $request->dimensiones_metros,
-            'criadero_id' => session('active_criadero_id'), // <-- Asigna automáticamente el criadero activo
+            'criadero_id' => session('active_criadero_id'), 
             'creado_por_usuario' => Auth::id(),
             'actualizado_por_usuario' => Auth::id(),
         ]);
