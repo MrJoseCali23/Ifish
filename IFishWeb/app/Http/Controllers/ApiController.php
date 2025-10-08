@@ -2,64 +2,73 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Dispensador;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Validator;
+use App\Models\Dispensador;
 use Carbon\Carbon;
 
 class ApiController extends Controller
 {
     /**
-     * Recibe y procesa un reporte de nivel de comida desde un dispensador.
+     * Endpoint para que un dispensador reporte su estado (nivel y temperatura).
      */
     public function reportarNivel(Request $request)
     {
-        $validator = Validator::make($request->all(), [
-            'mac_address' => 'required|string|mac_address',
-            'nivel_comida_kg' => 'required|numeric|min:0',
+        // 1. Validamos que el Arduino nos envíe los datos correctos.
+        $datosValidados = $request->validate([
+            'mac_address' => 'required|string|exists:Dispensadores,mac_address',
+            'nivel_comida_actual_kg' => 'required|numeric|min:0',
+            'temperatura_agua' => 'nullable|numeric', // <-- NUEVA VALIDACIÓN
         ]);
 
-        if ($validator->fails()) {
-            return response()->json(['status' => 'error', 'message' => 'Datos inválidos.', 'errors' => $validator->errors()], 400);
+        // 2. Buscamos el dispensador por su MAC Address.
+        $dispensador = Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
+                                ->where('mac_address', $datosValidados['mac_address'])
+                                ->first();
+
+        // 3. Si lo encontramos, actualizamos su información.
+        if ($dispensador) {
+            $dispensador->nivel_comida_actual_kg = $datosValidados['nivel_comida_actual_kg'];
+            $dispensador->ultimo_reporte = Carbon::now();
+            
+            // ▼▼▼ GUARDAMOS EL NUEVO DATO DE TEMPERATURA ▼▼▼
+            if (isset($datosValidados['temperatura_agua'])) {
+                $dispensador->temperatura_agua = $datosValidados['temperatura_agua'];
+            }
+            
+            $dispensador->save(); // Usamos save() ya que $timestamps está desactivado en el modelo
+
+            return response()->json(['status' => 'ok', 'message' => 'Estado reportado exitosamente.']);
         }
 
-        $dispensador = Dispensador::where('mac_address', $request->input('mac_address'))->first();
-
-        if (!$dispensador) {
-            return response()->json(['status' => 'error', 'message' => 'Dispositivo no registrado.'], 404);
-        }
-
-        $dispensador->nivel_comida_actual_kg = $request->input('nivel_comida_kg');
-        $dispensador->ultimo_reporte = Carbon::now();
-        $dispensador->save();
-
-        return response()->json(['status' => 'ok', 'message' => 'Nivel actualizado exitosamente.']);
+        return response()->json(['status' => 'error', 'message' => 'Dispensador no encontrado.'], 404);
     }
 
     /**
-     * Revisa si hay un comando pendiente para un dispensador y se lo devuelve.
+     * Endpoint para que un dispensador pregunte si tiene comandos pendientes.
      */
-    public function getComando($mac_address)
+    public function obtenerComando($mac_address)
     {
-        $dispensador = Dispensador::where('mac_address', $mac_address)->first();
+        // 1. Buscamos el dispensador por su MAC Address.
+        $dispensador = Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
+                                ->where('mac_address', $mac_address)
+                                ->first();
 
-        if (!$dispensador) {
-            return response()->json(['comando' => 'error', 'mensaje' => 'Dispositivo no encontrado'], 404);
-        }
-
-        if ($dispensador->comando_pendiente) {
-            $respuesta = [
+        // 2. Si lo encontramos, revisamos si tiene una orden pendiente.
+        if ($dispensador && $dispensador->comando_pendiente) {
+            $comando = [
                 'comando' => $dispensador->comando_pendiente,
-                'gramos' => (int)$dispensador->comando_valor,
+                'valor' => $dispensador->comando_valor,
             ];
 
+            // 3. Limpiamos la orden para que no se repita.
             $dispensador->comando_pendiente = null;
             $dispensador->comando_valor = null;
             $dispensador->save();
 
-            return response()->json($respuesta);
-        } else {
-            return response()->json(['comando' => 'nada']);
+            return response()->json($comando);
         }
+
+        // 4. Si no hay nada, le respondemos "nada".
+        return response()->json(['comando' => 'nada']);
     }
 }
