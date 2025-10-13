@@ -8,8 +8,9 @@
 
     <!-- Encabezado -->
     <div style="background-color: #f8fafc; padding: 20px; text-align: center; border-radius: 8px 8px 0 0;">
-        <img src="{{ config('app.logo', 'https://via.placeholder.com/150x50?text=iFish+Logo') }}" 
-             alt="iFish Logo" style="max-width: 150px; margin-bottom: 10px; display: block;">
+        <img src="{{ asset('images/logo2.png') }}" alt="iFish Logo" style="height: 45px;" class="img-fluid">
+        <!-- <img src="{{ config('app.logo', 'https://via.placeholder.com/150x50?text=iFish+Logo') }}" 
+             alt="iFish Logo" style="max-width: 150px; margin-bottom: 10px; display: block;"> -->
         <h1 style="color: #1e40af; font-size: 24px; margin: 0; font-weight: bold;">
             ¡Bienvenido a iFish, {{ $user->name }}!
         </h1>
