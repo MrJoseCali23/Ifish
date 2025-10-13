@@ -19,7 +19,9 @@ class Kernel extends ConsoleKernel
     {
         // Le decimos a Laravel que, cuando el "despertador" suene,
         // ejecute nuestro comando personalizado 'ifish:check-feedings'.
-        $schedule->command('ifish:check-feedings')->everyMinute();
+        $schedule->command('ifish:check-feedings')
+                 ->everyMinute()
+                 ->sendOutputTo(storage_path('logs/scheduler.log'));
     }
 
     /**
