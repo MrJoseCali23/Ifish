@@ -17,10 +17,12 @@ class ApiController extends Controller
         $datosValidados = $request->validate([
             'mac_address' => 'required|string|exists:Dispensadores,mac_address',
             'nivel_comida_actual_kg' => 'required|numeric|min:0',
-            'temperatura_agua' => 'nullable|numeric', // <-- NUEVA VALIDACIÓN
+            'temperatura_agua' => 'nullable|numeric',
         ]);
 
         // 2. Buscamos el dispensador por su MAC Address.
+        // Usamos 'withoutGlobalScope' para que el dispositivo pueda ser encontrado
+        // sin importar a qué criadero pertenezca.
         $dispensador = Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
                                 ->where('mac_address', $datosValidados['mac_address'])
                                 ->first();
@@ -30,7 +32,6 @@ class ApiController extends Controller
             $dispensador->nivel_comida_actual_kg = $datosValidados['nivel_comida_actual_kg'];
             $dispensador->ultimo_reporte = Carbon::now();
             
-            // ▼▼▼ GUARDAMOS EL NUEVO DATO DE TEMPERATURA ▼▼▼
             if (isset($datosValidados['temperatura_agua'])) {
                 $dispensador->temperatura_agua = $datosValidados['temperatura_agua'];
             }

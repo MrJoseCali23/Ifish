@@ -19,14 +19,14 @@
                         <select class="form-select @error('id_dispensador') is-invalid @enderror" id="id_dispensador" name="id_dispensador" required>
                             <option value="">Selecciona un dispensador preparado...</option>
                             @foreach ($dispensadores as $dispensador)
+                                {{-- ▼▼▼ CORRECCIÓN AQUÍ ▼▼▼ --}}
                                 <option value="{{ $dispensador->id_dispensador }}" data-comida="{{ $dispensador->tipoComidaActual->nombre_comida ?? 'No asignada' }}">
-                                    {{ $dispensador->modelo }} (Estanque: {{ $dispensador->estanque->nombre_comida ?? 'N/A' }})
+                                    {{ $dispensador->modelo }} (Estanque: {{ $dispensador->estanque->nombre_estanque ?? 'N/A' }})
                                 </option>
                             @endforeach
                         </select>
                         @error('id_dispensador') <div class="invalid-feedback">{{ $message }}</div> @enderror
                     </div>
-                    {{-- ▼▼▼ CAMPO DE SOLO LECTURA PARA MOSTRAR LA COMIDA ▼▼▼ --}}
                     <div class="col-md-4 mb-3">
                         <label class="form-label">Tipo de Comida Asignada</label>
                         <input type="text" id="tipoComidaAsignada" class="form-control" value="Selecciona un dispensador" readonly>

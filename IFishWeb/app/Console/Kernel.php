@@ -15,14 +15,11 @@ class Kernel extends ConsoleKernel
      */
     // En app/Console/Kernel.php
 
-    protected function schedule(Schedule $schedule)
+   protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
-
-        // AÑADE ESTA LÍNEA:
+        // Le decimos a Laravel que, cuando el "despertador" suene,
+        // ejecute nuestro comando personalizado 'ifish:check-feedings'.
         $schedule->command('ifish:check-feedings')->everyMinute();
-        $schedule->command('ifish:check-expiry')->daily(); // Se ejecutará una vez al día
-
     }
 
     /**

@@ -52,6 +52,7 @@ class HorarioAlimentacionController extends Controller
         // Ya no necesitamos pasar los tipos de comida, cada dispensador sabe el suyo.
         return view('public.horarios.create', compact('dispensadores'));
     }
+    
 
     /**
      * Guarda uno o más horarios nuevos.
@@ -126,7 +127,6 @@ class HorarioAlimentacionController extends Controller
 
         return view('public.horarios.edit', compact('horario', 'dispensadores'));
     }
-
     /**
      * Actualiza un horario en la base de datos.
      */

@@ -3,7 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\ApiController;
-use App\Http\Controllers\WeatherController; // Mantengo esta línea por tu ruta del clima
+use App\Http\Controllers\WeatherController;
 
 /*
 |--------------------------------------------------------------------------
@@ -11,7 +11,7 @@ use App\Http\Controllers\WeatherController; // Mantengo esta línea por tu ruta 
 |--------------------------------------------------------------------------
 */
 
-// Ruta por defecto de Laravel para autenticación de APIs
+// Ruta por defecto de Laravel para autenticación de APIs (es bueno mantenerla)
 Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
     return $request->user();
 });
@@ -20,10 +20,11 @@ Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
 Route::get('/weather/colomi', [WeatherController::class, 'getColomiWeather'])->name('weather.colomi');
 
 
-// --- RUTAS PARA LA API DE IFISH (LAS QUE FALTABAN) ---
+// --- RUTAS PARA LA COMUNICACIÓN CON EL ESP ---
 
-// Ruta para que el ESP reporte el nivel de comida
+// Ruta para que el ESP reporte su estado (nivel de comida, temperatura)
 Route::post('/reportar-nivel', [ApiController::class, 'reportarNivel']);
 
-// Ruta para que el ESP pregunte si hay comandos
-Route::get('/dispensadores/{mac_address}/comando', [ApiController::class, 'getComando']);
+// Ruta para que el ESP pregunte si tiene comandos pendientes
+// (Corregido para apuntar al método correcto 'obtenerComando')
+Route::get('/dispensadores/{mac_address}/comando', [ApiController::class, 'obtenerComando']);
