@@ -4,7 +4,8 @@ namespace App\Providers;
 
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\URL;
-use Illuminate\Support\Facades\DB; // Asegúrate de tener esta importación // Y esta, para el HTTPS en producción
+use Illuminate\Support\Facades\DB;
+use Illuminate\Pagination\Paginator;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -31,5 +32,7 @@ class AppServiceProvider extends ServiceProvider
         } catch (\Exception $e) {
             // Ignorar el error si el tipo ya está registrado
         }
+
+        Paginator::useBootstrapFive();
     }
 }

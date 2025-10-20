@@ -312,62 +312,6 @@
             filter: brightness(0) invert(1);
         }
 
-        /* Modo oscuro */
-        @media (prefers-color-scheme: dark) {
-            body {
-                background-color: var(--dark-mode-bg);
-                color: var(--dark-mode-text);
-            }
-            .navbar {
-                background: linear-gradient(135deg, #2d3748 0%, #4b5563 100%) !important;
-                border-bottom: 2px solid var(--dark-blue) !important;
-            }
-            .main-content {
-                background: linear-gradient(135deg, #374151 0%, #1f2937 100%);
-            }
-            .content-wrapper {
-                background: #2d3748;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
-            }
-            .content-wrapper::before {
-                background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.1), transparent);
-            }
-            .criadero-info {
-                background: linear-gradient(135deg, #4b5563, #2d3748);
-                color: var(--dark-mode-text);
-            }
-            .criadero-info .text-primary {
-                color: var(--accent-blue);
-            }
-            .criadero-info .text-muted {
-                color: var(--dark-mode-text);
-                opacity: 0.7;
-            }
-            .navbar-auth .text-end .text-dark {
-                color: var(--dark-mode-text);
-            }
-            .navbar-auth .text-end .text-muted {
-                color: var(--dark-mode-text);
-                opacity: 0.7;
-            }
-            .sidebar-nav .nav-link {
-                color: var(--dark-mode-text);
-            }
-            .sidebar-nav .nav-link:hover {
-                background: rgba(255, 255, 255, 0.1);
-            }
-            .sidebar-nav .nav-link.active {
-                background: linear-gradient(135deg, var(--accent-blue), var(--secondary-blue));
-            }
-            .sidebar-divider {
-                background: linear-gradient(to right, transparent, rgba(255, 255, 255, 0.2), transparent);
-            }
-            .sidebar-heading {
-                color: var(--dark-mode-text);
-                opacity: 0.8;
-            }
-        }
-
         /* Responsividad para móviles */
         @media (max-width: 768px) {
             .navbar-brand {
@@ -547,6 +491,69 @@
             </div>
         </div>
     </div>
+
+    <footer style="background-color: var(--primary-blue);" class="text-white pt-5 pb-4">
+        <div class="container text-center text-md-left">
+            <div class="row text-center text-md-left">
+                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold text-white">iFish</h5>
+                    <p>Sistema profesional para la gestión inteligente de criaderos de peces, optimizando la alimentación y el monitoreo.</p>
+                </div>
+
+                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold text-white">Enlaces Útiles</h5>
+                    <p>
+                        <a href="{{ route('ayuda') }}" class="text-white text-decoration-none">Ayuda</a>
+                    </p>
+                    <p>
+                        <a href="#" class="text-white text-decoration-none">Términos y Condiciones</a>
+                    </p>
+                    <p>
+                        <a href="#" class="text-white text-decoration-none">Política de Privacidad</a>
+                    </p>
+                </div>
+
+                <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
+                    <h5 class="text-uppercase mb-4 font-weight-bold text-white">Contacto</h5>
+                    <p>
+                        <i class="bi bi-house-door-fill me-2"></i> La Paz, Bolivia
+                    </p>
+                    <p>
+                        <i class="bi bi-envelope-fill me-2"></i> soporte@ifishbo.app
+                    </p>
+                    <p>
+                        <i class="bi bi-telephone-fill me-2"></i> +591 70000000
+                    </p>
+                </div>
+            </div>
+
+            <hr class="mb-4">
+
+            <div class="row align-items-center">
+                <div class="col-md-7 col-lg-8">
+                    <p class="text-center text-md-start">© {{ date('Y') }} iFish. Todos los derechos reservados.</p>
+                </div>
+                <div class="col-md-5 col-lg-4">
+                    <div class="text-center text-md-end">
+                        <ul class="list-unstyled list-inline">
+                            <li class="list-inline-item">
+                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="bi bi-facebook"></i></a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="bi bi-twitter"></i></a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="bi bi-google"></i></a>
+                            </li>
+                            <li class="list-inline-item">
+                                <a href="#" class="btn-floating btn-sm text-white" style="font-size: 23px;"><i class="bi bi-linkedin"></i></a>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </footer>
 
     <!-- Modales -->
     @stack('modals')

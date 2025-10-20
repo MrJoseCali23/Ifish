@@ -122,15 +122,17 @@ class TipoComidaController extends Controller
     /**
      * Elimina un tipo de comida de la base de datos.
      */
-    public function destroy(TipoComida $tipo_comida)
+    public function destroy($id)
     {
-        // ▼▼▼ SOLUCIÓN AL BUG #3 ▼▼▼
-        // Comprobamos si la comida está siendo usada en algún horario o registro.
-        if ($tipo_comida->horarios()->count() > 0 || $tipo_comida->registrosAlimentacion()->count() > 0) {
-            return back()->with('error', 'No se puede eliminar este tipo de comida porque ya está en uso en horarios o en el historial de alimentación.');
+        $tipo = TipoComida::findOrFail($id);
+
+        // Verifica si tiene relaciones activas
+        if ($tipo->horarios()->exists() || $tipo->registrosAlimentacion()->exists()) {
+            return redirect()->back()->with('error', 'No se puede eliminar: tiene datos asociados.');
         }
 
-        $tipo_comida->delete();
-        return redirect()->route('tipos_comida.index')->with('success', 'Tipo de comida eliminado exitosamente.');
+        $tipo->delete();
+        return redirect()->back()->with('success', 'Tipo de comida eliminado correctamente.');
     }
+
 }

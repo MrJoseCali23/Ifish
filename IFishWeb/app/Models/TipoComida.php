@@ -46,4 +46,14 @@ class TipoComida extends Model
     {
         static::addGlobalScope(new CriaderoScope);
     }
+
+    public function horarios()
+    {
+        return $this->hasMany(HorarioAlimentacion::class, 'id_tipo_comida', 'id_tipo_comida');
+    }
+
+    public function registrosAlimentacion()
+    {
+        return $this->hasMany(RegistroAlimentacion::class, 'id_tipo_comida', 'id_tipo_comida');
+    }
 }
