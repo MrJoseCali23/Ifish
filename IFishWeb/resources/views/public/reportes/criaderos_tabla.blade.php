@@ -12,8 +12,13 @@
     <div class="accordion" id="accordionCriaderos">
         @forelse($criaderosPorDueño as $dueñoNombre => $criaderos)
             <div class="accordion-item">
-                <h2 class="accordion-header" id="heading-{{ Str::slug($dueñoNombre) }}">
-                    <button class="accordion-button" type="button" data-bs-toggle="collapse" data-bs-target="#collapse-{{ Str::slug($dueñoNombre) }}" aria-expanded="true">
+                @php $slug = Str::slug($dueñoNombre);
+                       $idx = $loop->index;
+                       $headingId = "heading-{$slug}-{$idx}";
+                       $collapseId = "collapse-{$slug}-{$idx}";
+                @endphp
+                <h2 class="accordion-header" id="{{ $headingId }}">
+                    <button class="accordion-button {{ $loop->first ? '' : 'collapsed' }}" type="button" data-bs-toggle="collapse" data-bs-target="#{{ $collapseId }}" aria-expanded="{{ $loop->first ? 'true' : 'false' }}" aria-controls="{{ $collapseId }}">
                         <div class="w-100 d-flex justify-content-between align-items-center pe-3">
                             <span>
                                 <i class="bi bi-person-circle me-2"></i>
@@ -23,7 +28,7 @@
                         </div>
                     </button>
                 </h2>
-                <div id="collapse-{{ Str::slug($dueñoNombre) }}" class="accordion-collapse collapse show">
+                <div id="{{ $collapseId }}" class="accordion-collapse collapse {{ $loop->first ? 'show' : '' }}" aria-labelledby="{{ $headingId }}" data-bs-parent="#accordionCriaderos">
                     <div class="accordion-body p-0">
                         <table class="table table-hover mb-0">
                             <thead>

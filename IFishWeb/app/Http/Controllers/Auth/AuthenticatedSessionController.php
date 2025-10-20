@@ -41,7 +41,7 @@ class AuthenticatedSessionController extends Controller
                 // Guardamos el ID del único criadero en la sesión
                 session(['active_criadero_id' => $criaderos->first()->id]);
                 // Y lo enviamos directo al dashboard
-                return redirect()->intended(RouteServiceProvider::HOME);
+                return redirect(RouteServiceProvider::HOME);
             }
             
             // Si tiene más de uno, o ninguno, lo enviamos a la página de selección
@@ -49,7 +49,7 @@ class AuthenticatedSessionController extends Controller
         }
 
         // Si es Super Admin o cualquier otro rol, va al dashboard normal
-        return redirect()->intended(RouteServiceProvider::HOME);
+        return redirect(RouteServiceProvider::HOME);
     }
 
     /**
