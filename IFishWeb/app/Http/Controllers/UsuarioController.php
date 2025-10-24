@@ -54,37 +54,55 @@ class UsuarioController extends Controller
     {
         $request->validate([
             'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:'.User::class],
-            'nombre_criadero' => ['required', 'string', 'max:255', 'unique:criaderos,nombre'],
+            'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
+            'rol' => ['required', Rule::in(['dueno', 'admin'])],
+
+            // ✅ Validación condicional con closure
+            'nombre_criadero' => [
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->rol === 'dueno') {
+                        if (empty($value)) {
+                            $fail('El nombre del criadero es obligatorio para los dueños.');
+                        } elseif (!is_string($value)) {
+                            $fail('El nombre del criadero debe ser una cadena de texto.');
+                        } elseif (strlen($value) > 255) {
+                            $fail('El nombre del criadero no debe exceder 255 caracteres.');
+                        } elseif (Criadero::where('nombre', $value)->exists()) {
+                            $fail('El nombre del criadero ya está registrado.');
+                        }
+                    }
+                },
+            ],
+
             'ubicacion' => ['nullable', 'string', 'max:255'],
         ]);
 
-        // Usamos una transacción para asegurar que todo se complete con éxito.
-        $dueño = DB::transaction(function () use ($request) {
-            // 1. Creamos el usuario con contraseña nula y un token de invitación
-            $newUser = User::create([
+        $nuevoUsuario = DB::transaction(function () use ($request) {
+            $user = User::create([
                 'name' => $request->name,
                 'email' => $request->email,
-                'password' => null, 
-                'rol' => 'Dueño',
-                'invitation_token' => Str::random(60), // Generamos el token secreto
-                'invitation_expires_at' => now()->addDays(2), // El enlace expira en 48 horas
+                'password' => null,
+                'rol' => $request->rol === 'dueno' ? 'Dueño' : 'Admin',
+                'invitation_token' => Str::random(60),
+                'invitation_expires_at' => now()->addDays(2),
             ]);
 
-            // 2. Creamos su primer criadero
-            Criadero::create([
-                'nombre' => $request->nombre_criadero,
-                'ubicacion' => $request->ubicacion,
-                'user_id' => $newUser->id,
-            ]);
+            if ($request->rol === 'dueno') {
+                Criadero::create([
+                    'nombre' => $request->nombre_criadero,
+                    'ubicacion' => $request->ubicacion,
+                    'user_id' => $user->id,
+                ]);
+            }
 
-            return $newUser;
+            return $user;
         });
 
-        // 3. ▼▼▼ ENVIAMOS EL CORREO DE INVITACIÓN ▼▼▼
-        Mail::to($dueño->email)->send(new UserInvitationMail($dueño));
+        Mail::to($nuevoUsuario->email)->send(new UserInvitationMail($nuevoUsuario));
 
-        return redirect()->route('superadmin.usuarios.index')->with('success', 'Invitación enviada exitosamente. El usuario recibirá un correo para establecer su contraseña.');
+        return redirect()
+            ->route('superadmin.usuarios.index')
+            ->with('success', 'Invitación enviada exitosamente. El usuario recibirá un correo para establecer su contraseña.');
     }
 
     /**
