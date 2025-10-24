@@ -14,7 +14,6 @@ use App\Http\Controllers\SuperAdmin\DispensadorInventarioController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\CriaderoSelectorController;
 use App\Http\Controllers\InvitationController;
-// use App\Http\Controllers\Dueño\CriaderoController as DueñoCriaderoController;
 
 /*
 |--------------------------------------------------------------------------
@@ -68,6 +67,8 @@ Route::middleware(['auth', 'criadero.selected'])->group(function () {
     // Acciones personalizadas
     
     Route::post('dispensadores/{dispensadore}/alimentar', [DispensadorController::class, 'manualFeed'])->name('dispensadores.manualFeed');
+    Route::get('/dispensadores/live-data', [DispensadorController::class, 'data'])->name('dispensadores.data');
+
     
     // Grupo de rutas para la sección de Reportes
     Route::controller(ReporteController::class)->prefix('reportes')->name('reportes.')->group(function () {

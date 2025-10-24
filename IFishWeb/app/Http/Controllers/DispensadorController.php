@@ -107,4 +107,14 @@ class DispensadorController extends Controller
 
         return redirect()->route('dispensadores.index')->with('success', '¡Orden de alimentación manual enviada!');
     }
+    public function data()
+    {
+        $criaderoActivoId = session('active_criadero_id');
+
+        $dispensadores = Dispensador::where('criadero_id', $criaderoActivoId)
+            ->select('id_dispensador', 'temperatura_agua', 'nivel_comida_actual_kg', 'ultimo_reporte')
+            ->get();
+
+        return response()->json($dispensadores);
+    }
 }

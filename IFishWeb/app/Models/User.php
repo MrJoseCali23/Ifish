@@ -7,7 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
-use App\Notifications\CustomResetPasswordNotification;
+use App\Mail\CustomResetPasswordMail;
+use Illuminate\Support\Facades\Mail;
 
 class User extends Authenticatable
 {
@@ -58,8 +59,15 @@ class User extends Authenticatable
         // Esta es la nueva relación "Uno a Muchos".
         return $this->hasMany(Criadero::class, 'user_id');
     }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
     public function sendPasswordResetNotification($token)
     {
-        $this->notify(new CustomResetPasswordNotification($token));
+        Mail::to($this->email)->send(new CustomResetPasswordMail($this, $token));
     }
 }
