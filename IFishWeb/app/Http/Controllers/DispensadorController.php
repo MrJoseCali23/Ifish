@@ -18,8 +18,15 @@ class DispensadorController extends Controller
     public function __construct()
     {
         $this->authorizeResource(Dispensador::class, 'dispensadore');
+        
+        // 👉 pero excluimos "data" manualmente del chequeo de autorización
+        $this->middleware(function ($request, $next) {
+            if ($request->routeIs('dispensadores.data')) {
+                return $next($request); // saltar autorización
+            }
+            return $next($request);
+        });
     }
-
     /**
      * Muestra la lista de dispensadores DEL CRIADERO ACTIVO.
      */
@@ -109,6 +116,10 @@ class DispensadorController extends Controller
     }
     public function data()
     {
+        if (!auth()->check()) {
+            abort(403, 'No autorizado.');
+        }
+
         $criaderoActivoId = session('active_criadero_id');
 
         $dispensadores = Dispensador::where('criadero_id', $criaderoActivoId)
