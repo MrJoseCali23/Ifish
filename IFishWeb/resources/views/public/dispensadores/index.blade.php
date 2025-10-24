@@ -2,6 +2,7 @@
 @section('title', 'Gestión de Dispensadores - iFish')
 
 @section('content')
+    {{-- ✅ Mensajes de éxito o error --}}
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -15,12 +16,13 @@
         </div>
     @endif
 
-    {{-- 🔹 Encabezado principal --}}
+    {{-- 🔹 Encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="text-primary fw-bold">
                 <i class="bi bi-cpu-fill me-2"></i>Gestión de Dispensadores
             </h2>
+            <small class="text-muted" id="last-update">Última actualización: ahora</small>
         </div>
         @can('create', App\Models\Dispensador::class)
             <a href="{{ route('superadmin.dispensadores-inventario.create') }}" class="btn btn-success">
@@ -29,23 +31,23 @@
         @endcan
     </div>
 
-    {{-- 🔹 Contenedor de tarjetas --}}
+    {{-- 🔹 Tarjetas de dispensadores --}}
     <div class="card shadow">
         <div class="card-body">
             <div class="row g-4">
                 @forelse ($dispensadores as $dispensadore)
                     <div class="col-12 col-md-6 col-lg-4 d-flex">
                         <div class="card shadow-sm h-100 w-100">
-                            {{-- HEADER --}}
                             <div class="card-header d-flex justify-content-between align-items-center bg-light">
                                 <h5 class="card-title mb-0 fw-bold text-primary">
                                     <i class="bi bi-cpu-fill me-2"></i>{{ $dispensadore->modelo ?? 'Sin Modelo' }}
                                 </h5>
+
+                                @php
+                                    $isOnline = $dispensadore->ultimo_reporte &&
+                                        \Carbon\Carbon::parse($dispensadore->ultimo_reporte)->diffInMinutes(now()) < 15;
+                                @endphp
                                 <span id="estado-{{ $dispensadore->id_dispensador }}">
-                                    @php
-                                        $isOnline = $dispensadore->ultimo_reporte &&
-                                            \Carbon\Carbon::parse($dispensadore->ultimo_reporte)->diffInMinutes(now()) < 15;
-                                    @endphp
                                     @if($isOnline)
                                         <span class="badge bg-success"><i class="bi bi-wifi me-1"></i> Online</span>
                                     @else
@@ -54,7 +56,6 @@
                                 </span>
                             </div>
 
-                            {{-- BODY --}}
                             <div class="card-body d-flex flex-column">
                                 <div>
                                     <ul class="list-unstyled mb-3">
@@ -70,7 +71,6 @@
                                             @endif
                                         </li>
                                         <li><strong>Tipo de Comida:</strong> {{ $dispensadore->tipoComidaActual->nombre_comida ?? 'No asignada' }}</li>
-                                        {{-- Temperatura dinámica --}}
                                         <li>
                                             <strong>Temp. Agua:</strong>
                                             <span id="temp-{{ $dispensadore->id_dispensador }}" class="live-temp fw-bold fs-5">
@@ -79,7 +79,6 @@
                                             <span class="ms-2 text-success live-dot">● En vivo</span>
                                         </li>
                                     </ul>
-
                                     <p class="mb-1"><strong>Horarios:</strong> {{ $dispensadore->horarios_count ?? 0 }} programados</p>
                                 </div>
 
@@ -106,7 +105,6 @@
                                 </div>
                             </div>
 
-                            {{-- FOOTER --}}
                             <div class="card-footer text-end">
                                 @can('manualFeed', $dispensadore)
                                     <button type="button" class="btn btn-sm btn-info"
@@ -192,7 +190,6 @@
                         }
                     });
 
-                    // Actualizar texto de "última actualización"
                     lastUpdate.textContent = "Última actualización: " + new Date().toLocaleTimeString();
                 } catch (e) {
                     console.error("Error al actualizar datos:", e);
@@ -204,4 +201,47 @@
         });
     </script>
 @endsection
+
+@push('modals')
+    {{-- ✅ Modal de alimentación manual --}}
+    @foreach ($dispensadores as $dispensadore)
+        <div class="modal fade" id="manualFeedModal{{ $dispensadore->id_dispensador }}" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog">
+                <div class="modal-content">
+                    <div class="modal-header bg-primary text-white">
+                        <h5 class="modal-title">
+                            <i class="bi bi-basket me-2"></i> Alimentación Manual
+                        </h5>
+                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                    </div>
+
+                    <form method="POST" action="{{ route('dispensadores.manualFeed', $dispensadore) }}">
+                        @csrf
+                        <div class="modal-body">
+                            <div class="mb-3">
+                                <label class="form-label">Tipo de Comida Cargada</label>
+                                <input type="text" class="form-control"
+                                       value="{{ $dispensadore->tipoComidaActual->nombre_comida ?? 'No asignada' }}" readonly>
+                            </div>
+
+                            <div class="mb-3">
+                                <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">
+                                    Cantidad a Dispensar (en gramos)
+                                </label>
+                                <input type="number" class="form-control"
+                                       id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}"
+                                       name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">
+                            </div>
+                        </div>
+
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                            <button type="submit" class="btn btn-primary">Dispensar</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    @endforeach
+@endpush
 
