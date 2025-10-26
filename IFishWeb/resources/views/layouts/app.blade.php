@@ -516,7 +516,7 @@
                 <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
                     <h5 class="text-uppercase mb-4 font-weight-bold text-white">Contacto</h5>
                     <p>
-                        <i class="bi bi-house-door-fill me-2"></i> La Paz, Bolivia
+                        <i class="bi bi-house-door-fill me-2"></i> Cochabamba, Bolivia
                     </p>
                     <p>
                         <i class="bi bi-envelope-fill me-2"></i> soporte@ifishbo.app

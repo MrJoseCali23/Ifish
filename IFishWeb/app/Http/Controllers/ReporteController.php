@@ -26,72 +26,117 @@ class ReporteController extends Controller
     {
         $user = Auth::user();
 
-        // --- VALIDACIÓN Y MANEJO DE FECHAS ---
-        $request->validate(['fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio']);
-        $fechaMaxima = Carbon::now();
-        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : $fechaMaxima->copy();
-        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $fechaMaxima->copy()->subWeek();
-        if ($fechaFin->isFuture()) { $fechaFin = $fechaMaxima->copy(); }
+        // --- Validación de fechas ---
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+            'criadero_id' => 'nullable|string',
+            'estanque_id' => 'nullable|integer|exists:Estanques,id_estanque',
+        ], [
+            'fecha_fin.after_or_equal' => '⚠️ La fecha final no puede ser anterior a la fecha inicial.',
+        ]);
 
-        // ▼▼▼ AQUÍ ESTÁ LA LÓGICA QUE FALTABA ▼▼▼
-        // 1. Obtenemos la lista de criaderos que pertenecen al dueño para el filtro
+        // --- Fechas ---
+        $fechaMaxima = Carbon::now();
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->fecha_fin) : $fechaMaxima;
+        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->fecha_inicio) : $fechaMaxima->copy()->subWeek();
+        if ($fechaFin->isFuture()) $fechaFin = $fechaMaxima;
+
+        // --- Criaderos y filtros ---
         $criaderosDelDueño = $user->criaderos()->orderBy('nombre')->get();
         $criaderoIdsDelDueño = $criaderosDelDueño->pluck('id');
-        // ▲▲▲ FIN DE LA LÓGICA QUE FALTABA ▲▲▲
-
-        // 2. Determinamos qué criadero(s) mostrar
         $criaderoSeleccionadoId = $request->input('criadero_id', session('active_criadero_id'));
-        $criaderoIdsParaFiltrar = $criaderoIdsDelDueño; // Por defecto, todos los suyos
+        $criaderoIdsParaFiltrar = $criaderoIdsDelDueño;
 
-        if ($criaderoSeleccionadoId && $criaderoSeleccionadoId !== 'todos') {
-            // Si se seleccionó uno específico (y es suyo), usamos solo ese
-            if ($criaderoIdsDelDueño->contains($criaderoSeleccionadoId)) {
-                $criaderoIdsParaFiltrar = [$criaderoSeleccionadoId];
-            }
+        if ($criaderoSeleccionadoId && $criaderoSeleccionadoId !== 'todos' && $criaderoIdsDelDueño->contains($criaderoSeleccionadoId)) {
+            $criaderoIdsParaFiltrar = [$criaderoSeleccionadoId];
         }
-        
-        // 3. Obtenemos los dispensadores que pertenecen a los criaderos seleccionados
+
+        // --- Estanques y dispensadores ---
+        $estanques = Estanque::whereIn('criadero_id', $criaderoIdsParaFiltrar)->orderBy('nombre_estanque')->get();
         $dispensadorIds = Dispensador::whereIn('criadero_id', $criaderoIdsParaFiltrar)->pluck('id_dispensador');
 
-        // 4. Construimos la consulta principal
+        // --- Consulta principal ---
         $query = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
-                    ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor']);
-
-        $query->whereDate('created_at', '>=', $fechaInicio);
-        $query->whereDate('created_at', '<=', $fechaFin);
+            ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor'])
+            ->whereBetween('created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()]);
 
         if ($request->filled('estanque_id')) {
             $query->whereHas('dispensador.estanque', fn($q) => $q->where('id_estanque', $request->estanque_id));
         }
-        
-        $registros = $query->latest()->paginate(25)->withQueryString();
-        
-        $estanques = Estanque::whereIn('criadero_id', $criaderoIdsParaFiltrar)->orderBy('nombre_estanque')->get();
 
+        $registros = $query->latest()->paginate(25)->withQueryString();
+
+        // 🟡 Mensaje de advertencia cuando no hay resultados
+        $mensajeAdvertencia = null;
+
+        if ($registros->isEmpty()) {
+            $primerRegistro = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+                ->oldest('created_at')->first();
+
+            $ultimoRegistro = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+                ->latest('created_at')->first();
+
+            $mensajeAdvertencia = '⚠️ No se encontraron registros de alimentación en el rango seleccionado.';
+
+            if ($primerRegistro && $ultimoRegistro) {
+                $mensajeAdvertencia .= "\nLos registros disponibles van desde el " .
+                    $primerRegistro->created_at->format('d/m/Y') . " hasta el " .
+                    $ultimoRegistro->created_at->format('d/m/Y') . ".";
+            } elseif ($ultimoRegistro) {
+                $mensajeAdvertencia .= "\nEl último registro disponible fue el " .
+                    $ultimoRegistro->created_at->format('d/m/Y') . ".";
+            } else {
+                $mensajeAdvertencia .= "\nNo existen registros históricos todavía.";
+            }
+        }
+
+        // 🔹 Renderizado normal (con o sin advertencia)
         return view('public.reportes.historial_alimentacion', [
             'registros' => $registros,
             'estanques' => $estanques,
-            'criaderosDelDueño' => $criaderosDelDueño, // <-- Pasamos la variable a la vista
+            'criaderosDelDueño' => $criaderosDelDueño,
             'request' => $request,
             'fechaInicio' => $fechaInicio->toDateString(),
             'fechaFin' => $fechaFin->toDateString(),
+            'mensajeAdvertencia' => $mensajeAdvertencia, // 👈 este valor activa el alert
         ]);
     }
+
 /**
  * Muestra una tabla simple con todos los criaderos para el reporte.
  */
     public function reporteCriaderosTabla()
     {
-        // 1. Buscamos todos los criaderos y cargamos la información de su dueño
+        // Buscamos todos los criaderos con sus dueños
         $criaderos = Criadero::with('owner')->whereHas('owner')->get();
 
-        // 2. ▼▼▼ LA MAGIA ESTÁ AQUÍ ▼▼▼
-        // Usamos el método groupBy de las colecciones de Laravel para agruparlos.
+        // Agrupamos por nombre del dueño
         $criaderosPorDueño = $criaderos->groupBy('owner.name');
 
-        // 3. Pasamos la nueva colección agrupada a la vista
-        return view('public.reportes.criaderos_tabla', compact('criaderosPorDueño'));
+        // Contadores globales
+        $total = $criaderos->count();
+        $activos = $criaderos->where('estado', 'Activo')->count();
+        $suspendidos = $criaderos->where('estado', 'Suspendido')->count();
+        $inactivos = $criaderos->whereNotIn('estado', ['Activo', 'Suspendido'])->count();
+
+        // Mensaje dinámico
+        $mensajeAdvertencia = null;
+        if ($total === 0) {
+            $mensajeAdvertencia = "No hay criaderos registrados en la plataforma.";
+        } elseif ($activos === $total) {
+            $mensajeAdvertencia = "✅ Todos los criaderos están activos y funcionando.";
+        } elseif ($inactivos > 0) {
+            $mensajeAdvertencia = "⚠️ Existen criaderos inactivos o en mantenimiento.";
+        } elseif ($suspendidos > 0) {
+            $mensajeAdvertencia = "🚨 Hay criaderos suspendidos que requieren revisión.";
+        }
+
+        return view('public.reportes.criaderos_tabla', compact(
+            'criaderosPorDueño', 'total', 'activos', 'suspendidos', 'inactivos', 'mensajeAdvertencia'
+        ));
     }
+
     public function reporteCriaderosPdf()
     {
         $criaderos = Criadero::with('owner')->get();
@@ -144,30 +189,46 @@ class ReporteController extends Controller
     }
     public function reporteSaludPlataforma()
     {
-        // Solo el Super Admin puede ver este reporte.
-        // Usamos una Policy o un Gate para esto es lo ideal, pero por ahora un simple `abort_if` funciona.
         abort_if(Auth::user()->rol !== 'Admin', 403, 'Acción no autorizada.');
 
-        // Definimos el umbral: consideramos "offline" a un dispensador que no reporta hace más de 24 horas.
         $umbralDesconexion = Carbon::now()->subHours(24);
 
-        // Buscamos los dispensadores con problemas (offline)
+        // Dispensadores offline y online
         $dispensadoresOffline = Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
-                                ->where('ultimo_reporte', '<', $umbralDesconexion)
-                                ->orWhereNull('ultimo_reporte')
-                                ->with('criadero')
-                                ->get();
+            ->where(function ($q) use ($umbralDesconexion) {
+                $q->where('ultimo_reporte', '<', $umbralDesconexion)
+                ->orWhereNull('ultimo_reporte');
+            })
+            ->with('criadero')
+            ->get();
 
-        // Buscamos los dispensadores que están funcionando bien (online)
         $dispensadoresOnline = Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
-                                ->where('ultimo_reporte', '>=', $umbralDesconexion)
-                                ->with('criadero')
-                                ->get();
+            ->where('ultimo_reporte', '>=', $umbralDesconexion)
+            ->with('criadero')
+            ->get();
 
+        // Calcular porcentajes
+        $total = $dispensadoresOnline->count() + $dispensadoresOffline->count();
+        $porcentajeOnline = $total > 0 ? round(($dispensadoresOnline->count() / $total) * 100, 1) : 0;
+
+        // Mensaje dinámico
+        $mensajeAdvertencia = null;
+        if ($total === 0) {
+            $mensajeAdvertencia = "No se encontraron dispensadores registrados en la plataforma.";
+        } elseif ($dispensadoresOffline->isEmpty()) {
+            $mensajeAdvertencia = "✅ Todos los dispensadores están conectados y funcionando correctamente.";
+        } elseif ($dispensadoresOnline->isEmpty()) {
+            $mensajeAdvertencia = "🚨 Todos los dispensadores están desconectados. Verifique la red o los dispositivos.";
+        } else {
+            $mensajeAdvertencia = "Algunos dispensadores presentan problemas de conexión.";
+        }
 
         return view('public.reportes.salud_plataforma', compact(
             'dispensadoresOffline',
-            'dispensadoresOnline'
+            'dispensadoresOnline',
+            'porcentajeOnline',
+            'total',
+            'mensajeAdvertencia'
         ));
     }
      public function historialAlimentacionPdf(Request $request)
@@ -214,41 +275,100 @@ class ReporteController extends Controller
  */
     public function reporteHistorialDispensador(Request $request)
     {
-        // Solo el Super Admin puede ver este reporte.
         abort_if(Auth::user()->rol !== 'Admin', 403, 'Acción no autorizada.');
 
+        // ✅ Validación de fechas
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+        ], [
+            'fecha_fin.after_or_equal' => '⚠️ La fecha final no puede ser anterior a la inicial.',
+        ]);
+
+        // 📅 Fechas por defecto
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->fecha_fin) : Carbon::now();
+        $fechaInicio = $request->filled('fecha_inicio')
+            ? Carbon::parse($request->fecha_inicio)
+            : $fechaFin->copy()->subMonth();
+
+        // Limitar a hoy si se pone futuro
+        if ($fechaFin->isFuture()) {
+            $fechaFin = Carbon::now();
+        }
+
+        // 🔍 Filtros básicos
         $query = \App\Models\DispensadorEvento::with(['dispensador', 'usuario']);
 
-        // --- Aplicamos los filtros ---
         if ($request->filled('dispensador_id')) {
             $query->where('dispensador_id', $request->dispensador_id);
         }
-        if ($request->filled('fecha_inicio')) {
-            $query->whereDate('created_at', '>=', $request->fecha_inicio);
-        }
-        if ($request->filled('fecha_fin')) {
-            $query->whereDate('created_at', '<=', $request->fecha_fin);
-        }
 
+        $query->whereBetween('created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()]);
+
+        // 📊 Ejecutamos la consulta
         $eventos = $query->latest()->paginate(20)->withQueryString();
 
-        // Obtenemos todos los dispensadores para el menú del filtro
-        $dispensadores = \App\Models\Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)->orderBy('modelo')->get();
+        // 📡 Todos los dispensadores (para el filtro)
+        $dispensadores = \App\Models\Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
+            ->orderBy('modelo')->get();
 
-        return view('public.reportes.historial_dispensador', compact('eventos', 'dispensadores', 'request'));
+        // ⚠️ Mensaje de advertencia si no hay registros
+        $mensajeAdvertencia = null;
+
+        if ($eventos->isEmpty()) {
+            $primerEvento = \App\Models\DispensadorEvento::oldest('created_at')->first();
+            $ultimoEvento = \App\Models\DispensadorEvento::latest('created_at')->first();
+
+            $mensajeAdvertencia = "⚠️ No se encontraron eventos en el rango seleccionado.";
+
+            if ($primerEvento && $ultimoEvento) {
+                $mensajeAdvertencia .= "\nLos registros disponibles van desde el " .
+                    $primerEvento->created_at->format('d/m/Y') . " hasta el " .
+                    $ultimoEvento->created_at->format('d/m/Y') . ".";
+            } elseif ($ultimoEvento) {
+                $mensajeAdvertencia .= "\nEl último registro disponible fue el " .
+                    $ultimoEvento->created_at->format('d/m/Y') . ".";
+            } else {
+                $mensajeAdvertencia .= "\nNo existen registros históricos todavía.";
+            }
+        }
+
+        return view('public.reportes.historial_dispensador', [
+            'eventos' => $eventos,
+            'dispensadores' => $dispensadores,
+            'request' => $request,
+            'fechaInicio' => $fechaInicio->toDateString(),
+            'fechaFin' => $fechaFin->toDateString(),
+            'mensajeAdvertencia' => $mensajeAdvertencia,
+        ]);
     }
+
     public function reporteConsumoComida(Request $request)
     {
-        // --- Lógica de Fechas con Validaciones ---
-        $request->validate(['fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio']);
-        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : Carbon::now();
-        $fechaInicio = $request->filled('fecha_inicio') ? Carbon::parse($request->input('fecha_inicio')) : $fechaFin->copy()->subMonth(); // Por defecto, el último mes
+        // --- Validación de fechas ---
+        $request->validate([
+            'fecha_inicio' => 'nullable|date',
+            'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
+        ], [
+            'fecha_fin.after_or_equal' => '⚠️ La fecha final no puede ser anterior a la inicial.',
+        ]);
 
-        // --- Consulta Principal ---
+        // --- Rango de fechas actual ---
+        $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->input('fecha_fin')) : Carbon::now();
+        $fechaInicio = $request->filled('fecha_inicio')
+            ? Carbon::parse($request->input('fecha_inicio'))
+            : $fechaFin->copy()->subMonth();
+
+        // --- Rango anterior para comparar ---
+        $duracion = $fechaInicio->diffInDays($fechaFin);
+        $inicioAnterior = $fechaInicio->copy()->subDays($duracion + 1);
+        $finAnterior = $fechaInicio->copy()->subDay();
+
         $criaderoActivoId = session('active_criadero_id');
         $dispensadorIds = Dispensador::where('criadero_id', $criaderoActivoId)->pluck('id_dispensador');
 
-        $consumoPorTipo = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+        // --- Datos actuales ---
+        $consumoActual = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
             ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
             ->whereBetween('Registros_Alimentacion.created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()])
             ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
@@ -256,18 +376,52 @@ class ReporteController extends Controller
             ->orderBy('total_consumido', 'desc')
             ->get();
 
-        // Preparamos los datos para el gráfico de pastel
-        $labelsGrafico = $consumoPorTipo->pluck('nombre_comida');
-        $dataGrafico = $consumoPorTipo->pluck('total_consumido');
+        // --- Datos del periodo anterior ---
+        $consumoAnterior = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->whereBetween('Registros_Alimentacion.created_at', [$inicioAnterior->startOfDay(), $finAnterior->endOfDay()])
+            ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
+            ->groupBy('Tipos_Comida.nombre_comida')
+            ->get();
+
+        // --- Calcular variación porcentual ---
+        $variacion = 0;
+        $totalActual = $consumoActual->sum('total_consumido');
+        $totalAnterior = $consumoAnterior->sum('total_consumido');
+
+        if ($totalAnterior > 0) {
+            $variacion = round((($totalActual - $totalAnterior) / $totalAnterior) * 100, 1);
+        }
+
+        // --- Mensaje dinámico ---
+        $mensajeAdvertencia = null;
+        if ($consumoActual->isEmpty()) {
+            $ultimo = RegistroAlimentacion::latest('created_at')->first();
+            if ($ultimo) {
+                $mensajeAdvertencia = "⚠️ No se encontraron registros en el rango seleccionado. El último registro disponible fue el "
+                    . $ultimo->created_at->format('d/m/Y') . ".";
+            } else {
+                $mensajeAdvertencia = "⚠️ No existen registros de alimentación aún en este criadero.";
+            }
+        }
+
+        // --- Preparar datos para el gráfico ---
+        $labelsGrafico = $consumoActual->pluck('nombre_comida');
+        $dataGrafico = $consumoActual->pluck('total_consumido');
 
         return view('public.reportes.consumo_comida', [
-            'consumoPorTipo' => $consumoPorTipo,
+            'consumoPorTipo' => $consumoActual,
             'labelsGrafico' => $labelsGrafico,
             'dataGrafico' => $dataGrafico,
             'fechaInicio' => $fechaInicio->toDateString(),
             'fechaFin' => $fechaFin->toDateString(),
+            'variacion' => $variacion,
+            'mensajeAdvertencia' => $mensajeAdvertencia,
+            'totalActual' => $totalActual,
+            'totalAnterior' => $totalAnterior,
         ]);
     }
+
     public function reporteConsumoComidaPdf(Request $request)
     {
         // 1. Reutilizamos la misma lógica de filtrado
