@@ -14,6 +14,16 @@
             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
         </div>
     @endif
+    @if ($errors->any())
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <ul>
+                @foreach ($errors->all() as $error)
+                    <li>{{ $error }}</li>
+                @endforeach
+            </ul>
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        </div>
+    @endif
 
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
@@ -27,9 +37,10 @@
                 <i class="bi bi-plus-circle me-1"></i> Nuevo Dispensador
             </a>
         @endcan
-        </div>
+    </div>
     
-        <div class="card shadow">        <div class="card-body">
+    <div class="card shadow">
+        <div class="card-body">
             <div class="row g-4">
                 @forelse ($dispensadores as $dispensadore)
                     <div class="col-12 col-md-6 col-lg-4 d-flex">
@@ -181,6 +192,19 @@
                             nivel.classList.toggle('bg-success', porcentaje > 20);
                             nivel.classList.toggle('bg-danger', porcentaje <= 20);
                         }
+
+                        // Actualizar opciones del select en el modal
+                        const cantidadSelect = document.getElementById(`cantidad_dispensada_gramos_${d.id_dispensador}`);
+                        if (cantidadSelect) {
+                            const nivelGramos = parseInt((d.nivel_comida_actual_kg || 1) * 1000);
+                            cantidadSelect.innerHTML = '<option value="" disabled selected>Selecciona una cantidad...</option>';
+                            for (let i = 10; i <= Math.min(nivelGramos, 10000); i += 10) {
+                                const option = document.createElement('option');
+                                option.value = i;
+                                option.textContent = `${i} g`;
+                                cantidadSelect.appendChild(option);
+                            }
+                        }
                     });
 
                     lastUpdate.textContent = "Última actualización: " + new Date().toLocaleTimeString();
@@ -220,9 +244,16 @@
                                 <label for="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}" class="form-label">
                                     Cantidad a Dispensar (en gramos)
                                 </label>
-                                <input type="number" class="form-control"
-                                       id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}"
-                                       name="cantidad_dispensada_gramos" required min="1" placeholder="Ej: 150">
+                                <select class="form-select @error('cantidad_dispensada_gramos') is-invalid @enderror"
+                                        id="cantidad_dispensada_gramos_{{ $dispensadore->id_dispensador }}"
+                                        name="cantidad_dispensada_gramos" required>
+                                    <option value="" disabled selected>Selecciona una cantidad...</option>
+                                    <!-- Opciones se llenan con JavaScript -->
+                                </select>
+                                @error('cantidad_dispensada_gramos')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                                <small class="text-muted">No debe exceder {{ $dispensadore->nivel_comida_actual_kg * 1000 }} g.</small>
                             </div>
                         </div>
 
@@ -236,4 +267,3 @@
         </div>
     @endforeach
 @endpush
-

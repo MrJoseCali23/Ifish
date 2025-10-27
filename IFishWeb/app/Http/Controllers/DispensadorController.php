@@ -87,30 +87,91 @@ class DispensadorController extends Controller
      */
     public function manualFeed(Request $request, Dispensador $dispensadore)
     {
+        \Log::info('Iniciando manualFeed', [
+            'id_dispensador' => $dispensadore->id_dispensador,
+            'request' => $request->all()
+        ]);
+
         $this->authorize('manualFeed', $dispensadore);
 
+        $criaderoActivoId = session('active_criadero_id');
+        if (!$criaderoActivoId) {
+            \Log::error('No hay criadero activo en la sesión');
+            return back()->with('error', 'No se ha seleccionado un criadero activo.')->withInput();
+        }
+
+        // Verificar que el dispensador pertenece al criadero activo
+        if ($dispensadore->criadero_id !== $criaderoActivoId) {
+            \Log::error('Dispensador no pertenece al criadero', [
+                'id_dispensador' => $dispensadore->id_dispensador,
+                'criadero_id' => $criaderoActivoId
+            ]);
+            return back()->with('error', 'El dispensador no pertenece al criadero activo.')->withInput();
+        }
+
         if (is_null($dispensadore->current_tipo_comida_id)) {
-            return back()->with('error', 'Este dispensador no tiene un tipo de comida asignado.');
+            \Log::error('Dispensador sin tipo de comida', ['id_dispensador' => $dispensadore->id_dispensador]);
+            return back()->with('error', 'El dispensador no tiene un tipo de comida asignado.')->withInput();
         }
 
-        $request->validate(['cantidad_dispensada_gramos' => 'required|integer|min:1|max:10000']);
-
-        if (($request->cantidad_dispensada_gramos / 1000) > $dispensadore->nivel_comida_actual_kg) {
-            return back()->with('error', 'La cantidad solicitada supera el nivel de comida actual.');
+        try {
+            $datosValidados = $request->validate([
+                'cantidad_dispensada_gramos' => [
+                    'required',
+                    'integer',
+                    'min:10',
+                    'max:10000',
+                    function ($attribute, $value, $fail) {
+                        if ($value % 10 !== 0) {
+                            $fail('La cantidad debe ser un múltiplo de 10.');
+                        }
+                    },
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \Log::error('Validación fallida', ['errors' => $e->errors()]);
+            return back()->withErrors($e->errors())->withInput()->with('error', 'Error en los datos ingresados. Por favor, revisa los campos.');
         }
+
+        $cantidadGramos = $datosValidados['cantidad_dispensada_gramos'];
+        if (($cantidadGramos / 1000) > $dispensadore->nivel_comida_actual_kg) {
+            \Log::error('Cantidad excede nivel', [
+                'cantidad' => $cantidadGramos,
+                'nivel' => $dispensadore->nivel_comida_actual_kg
+            ]);
+            return back()->with('error', 'La cantidad supera el nivel actual del dispensador (' . ($dispensadore->nivel_comida_actual_kg * 1000) . ' g).')->withInput();
+        }
+
+        \Log::info('Creando registro de alimentación manual', [
+            'id_dispensador' => $dispensadore->id_dispensador,
+            'cantidad' => $cantidadGramos
+        ]);
 
         RegistroAlimentacion::create([
             'id_dispensador' => $dispensadore->id_dispensador,
             'id_tipo_comida' => $dispensadore->current_tipo_comida_id,
             'iniciado_por_usuario' => Auth::id(),
-            'cantidad_dispensada_gramos' => $request->cantidad_dispensada_gramos,
+            'cantidad_dispensada_gramos' => $cantidadGramos,
             'tipo_alimentacion' => 'Manual',
             'exitoso' => true,
         ]);
 
+        \Log::info('Enviando instrucción de alimentación manual', [
+            'id_dispensador' => $dispensadore->id_dispensador,
+            'comando' => 'dispensar',
+            'cantidad' => $cantidadGramos
+        ]);
+
         $dispensadore->comando_pendiente = 'dispensar';
-        $dispensadore->comando_valor = $request->input('cantidad_dispensada_gramos');
+        $dispensadore->comando_valor = $cantidadGramos;
+        $dispensadore->nivel_comida_actual_kg -= $cantidadGramos / 1000;
+        $dispensadore->ultimo_reporte = now();
         $dispensadore->save();
+
+        \Log::info('Alimentación manual completada', [
+            'id_dispensador' => $dispensadore->id_dispensador,
+            'nuevo_nivel' => $dispensadore->nivel_comida_actual_kg
+        ]);
 
         return redirect()->route('dispensadores.index')->with('success', '¡Orden de alimentación manual enviada!');
     }
