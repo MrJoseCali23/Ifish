@@ -25,7 +25,7 @@
     {{-- Formulario de filtros --}}
     <div class="card shadow-sm mb-4">
         <div class="card-body">
-            <form method="GET" action="{{ route('reportes.historial_dispensador') }}">
+            <form method="GET" action="{{ route('superadmin.reportes.historial_dispensador') }}">
                 <div class="row g-3 align-items-end">
                     <div class="col-md-4">
                         <label for="dispensador_id" class="form-label">Dispensador:</label>

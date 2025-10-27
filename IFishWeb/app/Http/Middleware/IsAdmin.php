@@ -1,29 +1,24 @@
 <?php
 
-// app/Http/Middleware/IsAdmin.php
-
 namespace App\Http\Middleware;
 
 use Closure;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth; // ✅ Importamos correctamente Auth
 use Symfony\Component\HttpFoundation\Response;
 
 class IsAdmin
 {
     /**
-     * Handle an incoming request.
-     *
-     * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
+     * Verifica si el usuario autenticado es un administrador.
      */
     public function handle(Request $request, Closure $next): Response
     {
-        // Comprobamos si el usuario ha iniciado sesión Y si su rol es 'Admin'
-        if (auth()->check() && auth()->user()->rol === 'Admin') {
-            // Si cumple las condiciones, le dejamos pasar a la ruta solicitada.
+        if (Auth::check() && Auth::user()->rol === 'Admin') {
             return $next($request);
         }
 
-        // Si no es un Admin, lo redirigimos al dashboard con un mensaje de error.
-        return redirect('/dashboard')->with('error', 'No tienes permisos para acceder a esta sección.');
+        // Si no es admin, mostramos error 403
+        abort(403, 'No tienes permisos para acceder a esta sección.');
     }
 }

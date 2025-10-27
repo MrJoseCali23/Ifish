@@ -21,12 +21,10 @@
         </div>
     @endif
 
-    {{-- ⚙️ Formulario de Filtros --}}
     <div class="card shadow-sm mb-4 mt-4">
         <div class="card-body">
             <form id="filtroForm" method="GET" action="{{ route('reportes.historial_alimentacion.form') }}">
                 <div class="row g-3">
-                    {{-- Criadero --}}
                     <div class="col-md-3">
                         <label for="criadero_id" class="form-label">Criadero:</label>
                         <select name="criadero_id" class="form-select">
@@ -43,7 +41,6 @@
                         </select>
                     </div>
 
-                    {{-- Estanque --}}
                     <div class="col-md-3">
                         <label for="estanque_id" class="form-label">Estanque:</label>
                         <select name="estanque_id" class="form-select">
@@ -57,7 +54,6 @@
                         </select>
                     </div>
 
-                    {{-- Fechas --}}
                     <div class="col-md-2">
                         <label class="form-label">Desde:</label>
                         <input type="date" name="fecha_inicio" class="form-control"
@@ -81,7 +77,6 @@
         </div>
     </div>
 
-    {{-- 📊 Tabla de Resultados --}}
     <div class="card shadow-sm">
         <div class="card-header d-flex justify-content-between align-items-center">
             <span class="fw-bold"><i class="bi bi-table me-2"></i> Resultados de la Búsqueda</span>
@@ -159,7 +154,6 @@
             const fin = document.querySelector('[name="fecha_fin"]');
             const hoy = new Date().toISOString().split('T')[0];
 
-            // Validar fechas antes de enviar
             form.addEventListener('submit', (e) => {
                 if (inicio.value && fin.value && fin.value < inicio.value) {
                     e.preventDefault();
@@ -183,7 +177,6 @@
                 }
             });
 
-            // SweetAlert para mensajes del servidor
             @if(session('warning'))
                 Swal.fire({
                     icon: 'warning',

@@ -25,7 +25,6 @@
     @endif
 
     <div class="accordion" id="accordionHorarios">
-        {{-- ▼▼▼ AQUÍ ESTÁ LA CORRECCIÓN ▼▼▼ --}}
         @forelse ($dispensadoresDelCriadero as $dispensador)
             <div class="accordion-item">
                 <h2 class="accordion-header" id="heading{{ $dispensador->id_dispensador }}">
@@ -43,7 +42,6 @@
                 </h2>
                 <div id="collapse{{ $dispensador->id_dispensador }}" class="accordion-collapse collapse show" aria-labelledby="heading{{ $dispensador->id_dispensador }}">
                     <div class="accordion-body">
-                        {{-- Si un dispensador no tiene horarios, mostramos un mensaje --}}
                         @if($dispensador->horarios->isEmpty())
                             <p class="text-center text-muted">Este dispensador aún no tiene horarios programados.</p>
                         @else

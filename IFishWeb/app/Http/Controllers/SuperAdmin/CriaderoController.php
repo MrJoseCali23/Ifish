@@ -39,7 +39,6 @@ class CriaderoController extends Controller
                   });
         }
         
-        // Mantenemos la lógica de ordenamiento que ya teníamos.
         $sort = $request->query('sort', 'created_at');
         $direction = $request->query('direction', 'desc');
         if (in_array($sort, ['nombre', 'created_at'])) {
@@ -100,23 +99,19 @@ class CriaderoController extends Controller
             'user_id' => 'required|exists:users,id',
             'ubicacion' => 'nullable|string|max:255',
             
-            // ▼▼▼ AQUÍ ESTÁ LA CORRECCIÓN ▼▼▼
             // Añadimos 'Archivado' a la lista de valores permitidos.
             'estado' => 'required|in:Activo,Suspendido,Archivado',
         ]);
 
         DB::transaction(function () use ($request, $criadero) {
-            // Desasignamos el criadero del dueño antiguo si ha cambiado
+            // Desasignamos el criadero del due\u00f1o antiguo si ha cambiado
             if ($criadero->user_id != $request->user_id) {
-                // Esta lógica habría que refinarla para el caso multi-criadero,
-                // pero por ahora la dejamos así.
             }
 
             // Actualizamos el criadero
             $criadero->update($request->all());
 
             // Asignamos el criadero al nuevo dueño
-            // Esta lógica también habría que revisarla.
         });
 
         return redirect()->route('superadmin.criaderos.index')->with('success', 'Criadero actualizado exitosamente.');

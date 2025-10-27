@@ -67,7 +67,6 @@ class ReporteController extends Controller
 
         $registros = $query->latest()->paginate(25)->withQueryString();
 
-        // 🟡 Mensaje de advertencia cuando no hay resultados
         $mensajeAdvertencia = null;
 
         if ($registros->isEmpty()) {
@@ -91,7 +90,6 @@ class ReporteController extends Controller
             }
         }
 
-        // 🔹 Renderizado normal (con o sin advertencia)
         return view('public.reportes.historial_alimentacion', [
             'registros' => $registros,
             'estanques' => $estanques,
@@ -149,9 +147,6 @@ class ReporteController extends Controller
         $reportesDisponibles = [];
         $rolUsuario = Auth::user()->rol;
 
-        // ▼▼▼ NUEVO CÁLCULO AÑADIDO ▼▼▼
-        // Contamos todos los criaderos para la tarjeta de resumen.
-        // Esta variable solo se usará si el usuario es Super Admin.
         $totalCriaderos = 0;
         if ($rolUsuario === 'Admin') {
             $totalCriaderos = Criadero::count();
@@ -167,7 +162,6 @@ class ReporteController extends Controller
                     'ruta' => route('reportes.criaderos.pdf'),
                     'es_pdf' => true,
                 ],
-                // Aquí podríamos añadir más reportes para el Super Admin en el futuro
             ];
         } 
         elseif ($rolUsuario === 'Dueño') {
@@ -180,11 +174,9 @@ class ReporteController extends Controller
                     'ruta' => route('reportes.historial_alimentacion.form'),
                     'es_pdf' => false,
                 ],
-                // Aquí podríamos añadir el historial de dispensadores para el Dueño
             ];
         }
 
-        // ▼▼▼ ACTUALIZAMOS EL COMPACT PARA INCLUIR LA NUEVA VARIABLE ▼▼▼
         return view('public.reportes.index', compact('reportesDisponibles', 'totalCriaderos'));
     }
     public function reporteSaludPlataforma()
@@ -233,7 +225,6 @@ class ReporteController extends Controller
     }
      public function historialAlimentacionPdf(Request $request)
     {
-        // ▼▼▼ LÓGICA DE FILTRADO Y CONSULTA AÑADIDA AQUÍ ▼▼▼
         $user = Auth::user();
         $criaderoIdsDelDueño = $user->criaderos()->pluck('id');
         
@@ -277,15 +268,13 @@ class ReporteController extends Controller
     {
         abort_if(Auth::user()->rol !== 'Admin', 403, 'Acción no autorizada.');
 
-        // ✅ Validación de fechas
         $request->validate([
             'fecha_inicio' => 'nullable|date',
             'fecha_fin' => 'nullable|date|after_or_equal:fecha_inicio',
         ], [
-            'fecha_fin.after_or_equal' => '⚠️ La fecha final no puede ser anterior a la inicial.',
+            'fecha_fin.after_or_equal' => '\u26a0\ufe0f La fecha final no puede ser anterior a la inicial.',
         ]);
 
-        // 📅 Fechas por defecto
         $fechaFin = $request->filled('fecha_fin') ? Carbon::parse($request->fecha_fin) : Carbon::now();
         $fechaInicio = $request->filled('fecha_inicio')
             ? Carbon::parse($request->fecha_inicio)
@@ -296,7 +285,6 @@ class ReporteController extends Controller
             $fechaFin = Carbon::now();
         }
 
-        // 🔍 Filtros básicos
         $query = \App\Models\DispensadorEvento::with(['dispensador', 'usuario']);
 
         if ($request->filled('dispensador_id')) {
@@ -305,14 +293,11 @@ class ReporteController extends Controller
 
         $query->whereBetween('created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()]);
 
-        // 📊 Ejecutamos la consulta
         $eventos = $query->latest()->paginate(20)->withQueryString();
 
-        // 📡 Todos los dispensadores (para el filtro)
         $dispensadores = \App\Models\Dispensador::withoutGlobalScope(\App\Scopes\CriaderoScope::class)
             ->orderBy('modelo')->get();
 
-        // ⚠️ Mensaje de advertencia si no hay registros
         $mensajeAdvertencia = null;
 
         if ($eventos->isEmpty()) {

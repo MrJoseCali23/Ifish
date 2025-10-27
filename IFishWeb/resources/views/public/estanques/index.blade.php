@@ -57,15 +57,13 @@
                                     <span class="text-muted">{{ $estanque->created_at->format('d/m/Y') }}</span>
                                 </td>
                                 <td class="text-end">
-                                    {{-- ▼▼▼ INICIO DEL CAMBIO ▼▼▼ --}}
-                                    {{-- Hemos quitado el .btn-group y añadido un margen al botón de editar --}}
                                     @can('update', $estanque)
                                         <a href="{{ route('estanques.edit', $estanque) }}" class="btn btn-sm btn-warning me-2" title="Editar">
                                             <i class="bi bi-pencil-square"></i>
                                         </a>
                                     @endcan
                                     @can('delete', $estanque)
-                                        <form action="{{ route('estanques.destroy', $estanque) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Estás seguro de que quieres eliminar este estanque?');">
+                                        <form action="{{ route('estanques.destroy', $estanque) }}" method="POST" class="d-inline" onsubmit="return confirm('\u00bfEst\u00e1s seguro de que quieres eliminar este estanque?');">
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="btn btn-sm btn-danger" title="Eliminar">
@@ -73,7 +71,6 @@
                                             </button>
                                         </form>
                                     @endcan
-                                    {{-- ▲▲▲ FIN DEL CAMBIO ▲▲▲ --}}
                                 </td>
                             </tr>
                         @empty

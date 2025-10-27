@@ -11,9 +11,7 @@
 
     <div class="accordion mt-4" id="faqAccordion">
 
-        {{-- =============================================================== --}}
-        {{-- SECCIÓN PARA VISITANTES (SIN INICIAR SESIÓN) --}}
-        {{-- =============================================================== --}}
+
         @guest
             <div class="accordion-item">
                 <h2 class="accordion-header" id="headingGuestOne">
@@ -47,11 +45,9 @@
             </div>
         @endguest
 
-        {{-- =============================================================== --}}
-        {{-- SECCIONES PARA USUARIOS QUE HAN INICIADO SESIÓN --}}
-        {{-- =============================================================== --}}
+
+
         @auth
-            {{-- ▼▼▼ SECCIÓN PARA DUEÑO DE CRIADERO (COMPLETADA) ▼▼▼ --}}
             @if (Auth::user()->rol === 'Dueño')
                 <div class="accordion-item">
                     <h2 class="accordion-header" id="headingOwnerOne">
@@ -85,7 +81,6 @@
                 </div>
             @endif
 
-            {{-- ▼▼▼ SECCIÓN PARA SUPER ADMIN (COMPLETADA) ▼▼▼ --}}
             @if (Auth::user()->rol === 'Admin')
                  <div class="accordion-item">
                     <h2 class="accordion-header" id="headingAdminOne">
@@ -126,7 +121,6 @@
         @endauth
     </div>
 
-    {{-- SECCIÓN DE CONTACTO (visible para todos) --}}
     <div class="mt-5 text-center">
         <hr>
         <h4 class="mt-4">¿Aún necesitas ayuda?</h4>

@@ -35,7 +35,6 @@
                             <th>Nombre</th>
                             <th>Descripción</th>
                             <th>Proveedor</th>
-                            <th>Origen</th>
                             <th class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -50,14 +49,6 @@
                                 </td>
                                 <td>
                                     <span class="text-muted">{{ $tipo->proveedor ?? 'N/A' }}</span>
-                                </td>
-                                <td>
-                                    {{-- Nueva columna para indicar si es global o personalizado --}}
-                                    @if(is_null($tipo->criadero_id))
-                                        <span class="badge bg-info text-dark">Global</span>
-                                    @else
-                                        <span class="badge bg-light text-dark">Personalizado</span>
-                                    @endif
                                 </td>
                                 <td class="text-end">
                                     <a href="{{ route('tipos_comida.edit', $tipo) }}" class="btn btn-sm btn-warning me-2" title="Editar">

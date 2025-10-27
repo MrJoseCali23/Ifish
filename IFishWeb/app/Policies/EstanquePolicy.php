@@ -23,8 +23,6 @@ class EstanquePolicy
 
     /**
      * Determina si un usuario puede ver la LISTA de estanques.
-     *
-     * ▼▼▼ MÉTODO NUEVO ▼▼▼
      */
     public function viewAny(User $user): bool
     {
@@ -35,8 +33,6 @@ class EstanquePolicy
 
     /**
      * Determina si un usuario puede ver UN estanque específico.
-     *
-     * ▼▼▼ MÉTODO NUEVO ▼▼▼
      */
     public function view(User $user, Estanque $estanque): bool
     {

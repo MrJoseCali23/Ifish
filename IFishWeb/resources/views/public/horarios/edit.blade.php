@@ -31,7 +31,6 @@
                 @csrf
                 @method('PUT')
 
-                {{-- 🔹 Dispensador --}}
                 <div class="mb-4">
                     <label for="id_dispensador" class="form-label fw-bold">Dispensador</label>
                     <select class="form-select" name="id_dispensador" id="id_dispensador" required>
@@ -46,7 +45,6 @@
                     </select>
                 </div>
 
-                {{-- 🔹 Hora programada --}}
                 <div class="row g-3">
                     <div class="col-md-4">
                         <label for="hora_programada" class="form-label fw-bold">Hora programada</label>
@@ -59,7 +57,6 @@
                         @enderror
                     </div>
 
-                    {{-- 🔹 Cantidad --}}
                     <div class="col-md-4">
                         <label for="cantidad_gramos" class="form-label fw-bold">Cantidad (gramos)</label>
                         <input type="number" id="cantidad_gramos" name="cantidad_gramos"
@@ -74,14 +71,12 @@
                         <small class="text-muted">No debe exceder el nivel de comida actual.</small>
                     </div>
 
-                    {{-- 🔹 Nivel actual del dispensador --}}
                     <div class="col-md-4">
                         <label class="form-label fw-bold">Nivel de comida actual (Kg)</label>
                         <input type="text" id="nivel_actual" class="form-control bg-light" readonly>
                     </div>
                 </div>
 
-                {{-- 🔹 Temperatura --}}
                 <div class="row g-3 mt-3">
                     <div class="col-md-4">
                         <label class="form-label fw-bold">Temperatura actual (°C)</label>
@@ -91,7 +86,6 @@
                         </div>
                     </div>
 
-                    {{-- 🔹 Estado del horario --}}
                     <div class="col-md-4 d-flex align-items-center">
                         <div class="form-check mt-4">
                             <input type="checkbox" class="form-check-input" id="activo" name="activo"
@@ -101,7 +95,6 @@
                     </div>
                 </div>
 
-                {{-- 🔹 Botones --}}
                 <div class="text-end mt-4">
                     <a href="{{ route('horarios.index') }}" class="btn btn-secondary">Cancelar</a>
                     <button type="submit" class="btn btn-primary">
@@ -112,7 +105,6 @@
         </div>
     </div>
 
-    {{-- ⚙️ Script dinámico --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const dispensadorSelect = document.getElementById('id_dispensador');
@@ -121,7 +113,6 @@
             const cantidadInput = document.getElementById('cantidad_gramos');
             const horaInput = document.getElementById('hora_programada');
 
-            // Inicializar con valores del dispensador actual
             actualizarDatos();
 
             dispensadorSelect.addEventListener('change', actualizarDatos);
@@ -134,7 +125,6 @@
                 }
             }
 
-            // Validar cantidad en tiempo real
             cantidadInput.addEventListener('input', () => {
                 const nivel = parseFloat(nivelInput.value);
                 const cantidadKg = cantidadInput.value / 1000;
@@ -148,7 +138,6 @@
                 }
             });
 
-            // Validar hora pasada (solo aviso visual)
             horaInput.addEventListener('change', () => {
                 const now = new Date();
                 const [h, m] = horaInput.value.split(':');

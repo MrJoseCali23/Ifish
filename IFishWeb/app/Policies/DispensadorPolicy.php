@@ -35,7 +35,6 @@ class DispensadorPolicy
      */
     public function update(User $user, Dispensador $dispensador): bool
     {
-        // ▼▼▼ LÓGICA CORREGIDA ▼▼▼
         // Un Dueño puede actualizar un dispensador si este pertenece a
         // CUALQUIERA de los criaderos que posee.
         return $user->criaderos()->where('id', $dispensador->criadero_id)->exists();
@@ -46,7 +45,6 @@ class DispensadorPolicy
      */
     public function manualFeed(User $user, Dispensador $dispensador): bool
     {
-        // ▼▼▼ LÓGICA CORREGIDA ▼▼▼
         // Aplicamos la misma regla que para actualizar.
         return $user->criaderos()->where('id', $dispensador->criadero_id)->exists();
     }

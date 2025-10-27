@@ -36,7 +36,6 @@
     </style>
 </head>
 <body>
-    <!-- Encabezado simple solicitado -->
     <div style="margin-bottom:12px;">
         <h1 style="color:#333; font-size:18px; margin:0 0 6px 0;">Reporte de Criaderos - iFish</h1>
         <p style="margin:0 0 6px 0; font-size:12px; color:#666;">Generado el: {{ $fecha }}</p>
@@ -52,7 +51,6 @@
 
     <main>
         @php
-            // Agrupar por dueño (nombre). Si prefieres agrupar por owner_id, adaptar aquí.
             $grouped = $criaderos->groupBy(function($item) {
                 return optional($item->owner)->name ?: 'Sin dueño';
             });

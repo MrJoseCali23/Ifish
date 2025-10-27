@@ -10,14 +10,12 @@
         Un dispensador se considera <strong>offline</strong> si no ha enviado datos en las últimas 24 horas.
     </p>
 
-    {{-- 🔔 Mensaje dinámico --}}
     @if(!empty($mensajeAdvertencia))
         <div class="alert {{ str_contains($mensajeAdvertencia, '🚨') ? 'alert-danger' : (str_contains($mensajeAdvertencia, '✅') ? 'alert-success' : 'alert-warning') }} fade show" style="white-space: pre-line;">
             {!! $mensajeAdvertencia !!}
         </div>
     @endif
 
-    {{-- 📊 Resumen general --}}
     <div class="row g-4 mb-4">
         <div class="col-md-4">
             <div class="card text-center shadow-sm h-100">

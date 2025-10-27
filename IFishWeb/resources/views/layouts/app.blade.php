@@ -505,12 +505,6 @@
                     <p>
                         <a href="{{ route('ayuda') }}" class="text-white text-decoration-none">Ayuda</a>
                     </p>
-                    <p>
-                        <a href="#" class="text-white text-decoration-none">Términos y Condiciones</a>
-                    </p>
-                    <p>
-                        <a href="#" class="text-white text-decoration-none">Política de Privacidad</a>
-                    </p>
                 </div>
 
                 <div class="col-md-4 col-lg-4 col-xl-4 mx-auto mt-3">
@@ -522,7 +516,7 @@
                         <i class="bi bi-envelope-fill me-2"></i> soporte@ifishbo.app
                     </p>
                     <p>
-                        <i class="bi bi-telephone-fill me-2"></i> +591 70000000
+                        <i class="bi bi-telephone-fill me-2"></i> +591 67408921
                     </p>
                 </div>
             </div>

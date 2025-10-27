@@ -2,7 +2,6 @@
 @section('title', 'Gestión de Dispensadores - iFish')
 
 @section('content')
-    {{-- ✅ Mensajes de éxito o error --}}
     @if (session('success'))
         <div class="alert alert-success alert-dismissible fade show" role="alert">
             {{ session('success') }}
@@ -16,7 +15,6 @@
         </div>
     @endif
 
-    {{-- 🔹 Encabezado --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="text-primary fw-bold">
@@ -29,11 +27,9 @@
                 <i class="bi bi-plus-circle me-1"></i> Nuevo Dispensador
             </a>
         @endcan
-    </div>
-
-    {{-- 🔹 Tarjetas de dispensadores --}}
-    <div class="card shadow">
-        <div class="card-body">
+        </div>
+    
+        <div class="card shadow">        <div class="card-body">
             <div class="row g-4">
                 @forelse ($dispensadores as $dispensadore)
                     <div class="col-12 col-md-6 col-lg-4 d-flex">
@@ -82,7 +78,6 @@
                                     <p class="mb-1"><strong>Horarios:</strong> {{ $dispensadore->horarios_count ?? 0 }} programados</p>
                                 </div>
 
-                                {{-- Nivel de comida --}}
                                 <div class="mt-auto pt-3">
                                     <label class="form-label d-block mb-1"><strong>Nivel de Comida:</strong>
                                         {{ number_format($dispensadore->nivel_comida_actual_kg, 2) }} Kg
@@ -136,7 +131,6 @@
         </div>
     </div>
 
-    {{-- 🔹 Estilos para temperatura y "en vivo" --}}
     <style>
         .live-temp {
             color: #e63946;
@@ -153,7 +147,6 @@
         }
     </style>
 
-    {{-- 🔹 Script de actualización automática cada 15s --}}
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const lastUpdate = document.getElementById('last-update');
@@ -203,7 +196,6 @@
 @endsection
 
 @push('modals')
-    {{-- ✅ Modal de alimentación manual --}}
     @foreach ($dispensadores as $dispensadore)
         <div class="modal fade" id="manualFeedModal{{ $dispensadore->id_dispensador }}" tabindex="-1" aria-hidden="true">
             <div class="modal-dialog">

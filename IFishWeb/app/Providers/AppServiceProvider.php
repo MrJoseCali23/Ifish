@@ -26,11 +26,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        // El código que soluciona el error de la migración del ENUM
         try {
             DB::getDoctrineSchemaManager()->getDatabasePlatform()->registerDoctrineTypeMapping('enum', 'string');
         } catch (\Exception $e) {
-            // Ignorar el error si el tipo ya está registrado
         }
 
         Paginator::useBootstrapFive();

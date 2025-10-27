@@ -229,15 +229,12 @@
             <div class="profile-grid">
                 @forelse ($criaderos as $criadero)
 
-                    {{-- ▼▼▼ LÓGICA INTELIGENTE EN LA VISTA ▼▼▼ --}}
                     @if ($criadero->estado === 'Activo')
-                        {{-- Si está activo, es un enlace clickeable --}}
                         <a href="{{ route('criaderos.set-active', $criadero) }}" class="profile-card">
                             <div class="profile-icon"><i class="bi bi-building"></i></div>
                             <p class="profile-name">{{ $criadero->nombre }}</p>
                         </a>
                     @else
-                        {{-- Si NO está activo, es un div no clickeable --}}
                         <div class="profile-card disabled">
                             <span class="status-badge">{{ $criadero->estado }}</span>
                             <div class="profile-icon"><i class="bi bi-building"></i></div>

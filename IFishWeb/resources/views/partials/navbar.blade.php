@@ -1,13 +1,9 @@
 @auth
-    {{-- ENLACE AL DASHBOARD (Visible para todos los que inician sesión) --}}
     <a class="nav-link @if(request()->routeIs('dashboard')) active @endif" href="{{ route('dashboard') }}" aria-label="Ir al Dashboard" data-bs-toggle="tooltip" title="Ver el panel principal">
         <i class="bi bi-speedometer2 nav-icon"></i>
         <span>Dashboard</span>
     </a>
 
-    {{-- =============================================================== --}}
-    {{-- MENÚ EXCLUSIVO PARA EL SUPER ADMIN --}}
-    {{-- =============================================================== --}}
     @if (Auth::user()->rol === 'Admin')
         <hr class="sidebar-divider my-3">
         <div class="sidebar-heading text-white-75 small text-uppercase fw-semibold">Gestión de Plataforma</div>
@@ -42,9 +38,6 @@
         </a>
     @endif
 
-    {{-- =============================================================== --}}
-    {{-- MENÚ PARA USUARIOS DE CRIADERO (Dueño) --}}
-    {{-- =============================================================== --}}
     @if (Auth::user()->rol === 'Dueño')
         <hr class="sidebar-divider my-3">
         <div class="sidebar-heading text-white-75 small text-uppercase fw-semibold">Mi Criadero</div>
@@ -77,7 +70,6 @@
 
 @endauth
 
-{{-- ENLACE FINAL (visible para todos) --}}
 <hr class="sidebar-divider my-3">
 <a class="nav-link @if(request()->routeIs('ayuda')) active @endif" href="{{ route('ayuda') }}" aria-label="Ayuda y Soporte" data-bs-toggle="tooltip" title="Acceder a la sección de ayuda">
     <i class="bi bi-question-circle nav-icon"></i>

@@ -40,7 +40,6 @@ class TipoComidaController extends Controller
         $request->validate([
             'nombre_comida' => [
                 'required', 'string', 'max:100',
-                // ▼▼▼ SOLUCIÓN AL BUG #1 (VALIDACIÓN) ▼▼▼
                 Rule::unique('Tipos_Comida')->where(fn ($query) => $query->where('criadero_id', $criaderoActivoId)),
             ],
             'descripcion' => 'nullable|string',
@@ -75,8 +74,7 @@ class TipoComidaController extends Controller
     }
     // public function edit(TipoComida $tipo_comida)
     // {
-    //     // ▼▼▼ SOLUCIÓN AL BUG #2 ▼▼▼
-    //     // Simplemente pasamos el modelo que Laravel ya encontró por nosotros.
+    //     // Simplemente pasamos el modelo que Laravel ya encontr\u00f3 por nosotros.
     //     return view('public.tipos_comida.edit', compact('tipo_comida'));
     // }
 

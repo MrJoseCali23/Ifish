@@ -1,8 +1,7 @@
 @extends('layouts.app')
 
-@section('title', 'iFish - Optimización para la Acuicultura')
+@section('title', 'iFish - Optimizaci\u00f3n para la Acuicultura')
 
-{{-- Añadimos unos estilos personalizados para un look más limpio --}}
 @push('styles')
 <style>
     .hero-section {
@@ -22,7 +21,6 @@
 
 
 @section('content')
-    {{-- 1. SECCIÓN PRINCIPAL ('HERO') --}}
     <div class="hero-section text-center py-5 rounded-3">
         <div class="container col-xl-10 col-xxl-8 px-4 py-5">
             <div class="row align-items-center g-lg-5 py-5">
@@ -32,14 +30,12 @@
                         iFish te ofrece la tecnología para automatizar la alimentación y monitorear tus dispensadores de forma remota, permitiéndote tomar decisiones inteligentes basadas en datos reales.
                     </p>
                     <div class="d-grid gap-2 d-md-flex justify-content-md-start mt-4">
-                        {{-- REEMPLAZA "591" Y "TUNUMERO" CON TUS DATOS --}}
                         <a href="https://wa.me/59167408921?text=Hola,%20estoy%20interesado%20en%20el%20servicio%20de%20iFish." class="btn btn-success btn-lg px-4 me-md-2" target="_blank">
                             <i class="bi bi-whatsapp me-2"></i>Solicitar Servicio
                         </a>
                     </div>
                 </div>
                 <div class="col-md-10 mx-auto col-lg-5">
-                    {{-- WIDGET DEL CLIMA --}}
                     <div class="card shadow-lg glass-effect">
                         <div class="card-body text-center p-4">
                             <h5 class="card-title text-muted mb-3"><i class="bi bi-geo-alt-fill me-2"></i>Clima en Colomi</h5>
@@ -53,7 +49,6 @@
         </div>
     </div>
 
-    {{-- 2. SECCIÓN DE BENEFICIOS --}}
     <div class="container px-4 py-5">
         <h2 class="pb-2 border-bottom text-center">Beneficios para tu Negocio</h2>
         <div class="row g-4 py-5 row-cols-1 row-cols-lg-3">
@@ -91,7 +86,6 @@
 
 
 @push('scripts')
-{{-- TU SCRIPT PARA CARGAR EL CLIMA --}}
 <script>
 document.addEventListener('DOMContentLoaded', function () {
     const weatherInfo = document.getElementById('weather-info');

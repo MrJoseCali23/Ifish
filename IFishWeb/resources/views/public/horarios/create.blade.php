@@ -24,7 +24,6 @@
             <form method="POST" action="{{ route('horarios.store') }}" id="horarioForm">
                 @csrf
 
-                {{-- 🔹 Selección de Dispensador --}}
                 <div class="mb-3">
                     <label for="id_dispensador" class="form-label fw-bold">Dispensador</label>
                     <select class="form-select @error('id_dispensador') is-invalid @enderror" name="id_dispensador" id="id_dispensador" required>
@@ -42,7 +41,6 @@
                     @enderror
                 </div>
 
-                {{-- 🔹 Selección de modo --}}
                 <div class="mb-4">
                     <label class="form-label fw-bold">Modo de creación</label>
                     <div class="form-check">
@@ -55,7 +53,6 @@
                     </div>
                 </div>
 
-                {{-- 🟢 MODO MANUAL --}}
                 <div id="seccion_manual">
                     <div class="row g-3">
                         <div class="col-md-4">
@@ -76,7 +73,6 @@
                     </div>
                 </div>
 
-                {{-- 🔵 MODO AUTOMÁTICO --}}
                 <div id="seccion_automatico" class="mt-4" style="display:none;">
                     <h5 class="text-primary fw-bold"><i class="bi bi-calculator me-1"></i> Cálculo por Biomasa</h5>
 
@@ -125,7 +121,6 @@
         </div>
     </div>
 
-    {{-- 📜 Script --}}
     <script>
         document.addEventListener('DOMContentLoaded', () => {
             const modoManual = document.getElementById('modo_manual');
@@ -138,7 +133,6 @@
             const resultadoDiv = document.getElementById('resultado_calculo');
             const cantidadInput = document.getElementById('cantidad_gramos');
 
-            // Mostrar/ocultar secciones según modo
             modoManual.addEventListener('change', () => {
                 seccionManual.style.display = 'block';
                 seccionAuto.style.display = 'none';
@@ -148,7 +142,6 @@
                 seccionAuto.style.display = 'block';
             });
 
-            // Autocompletar temperatura desde el dispensador
             dispensadorSelect.addEventListener('change', (e) => {
                 const option = e.target.selectedOptions[0];
                 if (option) {
@@ -157,7 +150,6 @@
                 }
             });
 
-            // Calcular cantidad sugerida
             btnCalcular.addEventListener('click', () => {
                 const peces = parseFloat(document.getElementById('num_peces').value);
                 const peso = parseFloat(document.getElementById('peso_promedio').value);
@@ -169,17 +161,14 @@
                     return;
                 }
 
-                // Calcular biomasa (en kg)
                 const biomasa = (peces * peso) / 1000;
 
-                // Determinar tasa según peso y temperatura
                 let tasa = 0.02;
                 if (peso < 10) tasa = 0.05;
                 else if (peso < 100) tasa = 0.04;
                 else if (peso < 500) tasa = 0.03;
                 else tasa = 0.02;
 
-                // Ajuste por temperatura
                 if (!isNaN(temp)) {
                     if (temp < 15) tasa *= 0.8;
                     else if (temp > 25) tasa *= 1.1;

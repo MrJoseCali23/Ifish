@@ -2,9 +2,6 @@
 @section('title', 'Reporte: Lista de Criaderos')
 
 @section('content')
-    {{-- ================================================ --}}
-    {{-- ENCABEZADO --}}
-    {{-- ================================================ --}}
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
             <h2 class="text-primary fw-bold mb-1">
@@ -17,9 +14,6 @@
         </a>
     </div>
 
-    {{-- ================================================ --}}
-    {{-- ALERTAS Y RESUMEN GENERAL --}}
-    {{-- ================================================ --}}
     @if(!empty($mensajeAdvertencia))
         <div class="alert 
             {{ str_contains($mensajeAdvertencia, '🚨') ? 'alert-danger' : 
@@ -68,9 +62,6 @@
         </div>
     </div>
 
-    {{-- ================================================ --}}
-    {{-- LISTADO AGRUPADO POR DUEÑO --}}
-    {{-- ================================================ --}}
     <div class="accordion" id="accordionCriaderos">
         @forelse($criaderosPorDueño as $dueñoNombre => $criaderos)
             @php
@@ -139,9 +130,6 @@
         @endforelse
     </div>
 
-    {{-- ================================================ --}}
-    {{-- BOTÓN VOLVER --}}
-    {{-- ================================================ --}}
     <div class="mt-4">
         <a href="{{ route('reportes.index') }}" class="btn btn-outline-secondary">
             <i class="bi bi-arrow-left"></i> Volver a la Central de Reportes
