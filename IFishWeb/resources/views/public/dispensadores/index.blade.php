@@ -186,7 +186,7 @@
                         }
 
                         if (nivel) {
-                            const porcentaje = Math.min((d.nivel_comida_actual_kg / 1) * 100, 100);
+                            const porcentaje = Math.min((d.nivel_comida_actual_kg / 0.50) * 100, 100);
                             nivel.style.width = `${porcentaje}%`;
                             nivel.textContent = `${Math.round(porcentaje)}%`;
                             nivel.classList.toggle('bg-success', porcentaje > 20);
@@ -196,7 +196,7 @@
                         // Actualizar opciones del select en el modal
                         const cantidadSelect = document.getElementById(`cantidad_dispensada_gramos_${d.id_dispensador}`);
                         if (cantidadSelect) {
-                            const nivelGramos = parseInt((d.nivel_comida_actual_kg || 1) * 1000);
+                            const nivelGramos = parseInt((d.nivel_comida_actual_kg || 0.50) * 1000);
                             cantidadSelect.innerHTML = '<option value="" disabled selected>Selecciona una cantidad...</option>';
                             for (let i = 10; i <= Math.min(nivelGramos, 10000); i += 10) {
                                 const option = document.createElement('option');
