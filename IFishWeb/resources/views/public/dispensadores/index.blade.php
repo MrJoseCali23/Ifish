@@ -94,7 +94,7 @@
                                         {{ number_format($dispensadore->nivel_comida_actual_kg, 2) }} Kg
                                     </label>
                                     @php
-                                        $capacidad_max_kg = 1;
+                                        $capacidad_max_kg = 0.50;
                                         $porcentaje = ($dispensadore->nivel_comida_actual_kg / $capacidad_max_kg) * 100;
                                         $color_barra = $porcentaje > 20 ? 'bg-success' : 'bg-danger';
                                     @endphp

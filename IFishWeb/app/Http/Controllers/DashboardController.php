@@ -39,7 +39,7 @@ class DashboardController extends Controller
 
             // ⚠️ Dispensadores críticos (<15%)
             $data['dispensadoresCriticos'] = Dispensador::whereIn('id_dispensador', $dispensadorIds)
-                ->where('nivel_comida_actual_kg', '<', (25 * 0.15)) // capacidad 25kg
+                ->where('nivel_comida_actual_kg', '<', (0.50 * 0.15)) // capacidad 25kg
                 ->get();
 
             // 📈 Plan cumplido hoy
