@@ -30,10 +30,15 @@ class ApiController extends Controller
             ], 404);
         }
 
-        // ✅ Actualizamos datos del dispensador
+        // FORZAR CASTEO A FLOAT
+        $nivel = (float) $datosValidados['nivel_comida_actual_kg'];
+        $temperatura = $datosValidados['temperatura_agua'] !== null
+            ? (float) $datosValidados['temperatura_agua']
+            : $dispensador->temperatura_agua;
+
         $dispensador->update([
-            'nivel_comida_actual_kg' => $datosValidados['nivel_comida_actual_kg'],
-            'temperatura_agua' => $datosValidados['temperatura_agua'] ?? $dispensador->temperatura_agua,
+            'nivel_comida_actual_kg' => $nivel,
+            'temperatura_agua' => $temperatura,
             'ultimo_reporte' => Carbon::now(),
         ]);
 
