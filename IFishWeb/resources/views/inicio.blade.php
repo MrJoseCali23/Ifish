@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'iFish - Optimizaci\u00f3n para la Acuicultura')
+@section('title', 'iFish - Optimiza tu Criadero de Peces')
 
 @push('styles')
 <style>
