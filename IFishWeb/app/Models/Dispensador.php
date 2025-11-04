@@ -28,6 +28,7 @@ class Dispensador extends Model
         'modelo',
         'estado',
         'nivel_comida_actual_kg',
+        'temperatura_agua',
         'ultimo_reporte',
         'comando_pendiente',
         'comando_valor',
