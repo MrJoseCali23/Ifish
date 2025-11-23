@@ -53,7 +53,7 @@ class UsuarioController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'regex:/^[\pL\s\-]+$/u', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:' . User::class],
             'rol' => ['required', Rule::in(['dueno', 'admin'])],
 
@@ -122,7 +122,7 @@ class UsuarioController extends Controller
     public function update(Request $request, User $usuario)
     {
         $request->validate([
-            'name' => ['required', 'string', 'max:255'],
+            'name' => ['required', 'string', 'regex:/^[\pL\s\-]+$/u', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', Rule::unique('users')->ignore($usuario->id)],
             // La validación para 'rol' se elimina porque ya no es editable.
             'password' => ['nullable', 'confirmed', Rules\Password::defaults()],
