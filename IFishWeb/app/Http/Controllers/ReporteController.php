@@ -52,12 +52,14 @@ class ReporteController extends Controller
             $criaderoIdsParaFiltrar = [$criaderoSeleccionadoId];
         }
 
-        // --- Estanques y dispensadores ---
+        // --- Estanques, dispensadores y dueños ---
         $estanques = Estanque::whereIn('criadero_id', $criaderoIdsParaFiltrar)->orderBy('nombre_estanque')->get();
         $dispensadorIds = Dispensador::whereIn('criadero_id', $criaderoIdsParaFiltrar)->pluck('id_dispensador');
+        $ownerIds = Criadero::whereIn('id', $criaderoIdsParaFiltrar)->pluck('user_id')->unique();
 
         // --- Consulta principal ---
         $query = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+            ->whereIn('iniciado_por_usuario', $ownerIds) // <-- FILTRO DE SEGURIDAD AÑADIDO
             ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor'])
             ->whereBetween('created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()]);
 
@@ -238,8 +240,10 @@ class ReporteController extends Controller
         }
         
         $dispensadorIds = Dispensador::whereIn('criadero_id', $criaderoIdsParaFiltrar)->pluck('id_dispensador');
+        $ownerIds = Criadero::whereIn('id', $criaderoIdsParaFiltrar)->pluck('user_id')->unique();
 
         $query = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
+                    ->whereIn('iniciado_por_usuario', $ownerIds) // <-- FILTRO DE SEGURIDAD AÑADIDO
                     ->with(['dispensador.estanque.criadero', 'tipoComida', 'iniciadoPor']);
 
         if ($request->filled('fecha_inicio')) { $query->whereDate('created_at', '>=', $request->fecha_inicio); }
@@ -354,7 +358,13 @@ class ReporteController extends Controller
 
         // --- Datos actuales ---
         $consumoActual = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
-            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->join('Tipos_Comida', function ($join) use ($criaderoActivoId) {
+                $join->on('Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+                     ->where(function($query) use ($criaderoActivoId) {
+                         $query->where('Tipos_Comida.criadero_id', '=', $criaderoActivoId)
+                               ->orWhereNull('Tipos_Comida.criadero_id');
+                     });
+            })
             ->whereBetween('Registros_Alimentacion.created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()])
             ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
             ->groupBy('Tipos_Comida.nombre_comida')
@@ -363,7 +373,13 @@ class ReporteController extends Controller
 
         // --- Datos del periodo anterior ---
         $consumoAnterior = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
-            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->join('Tipos_Comida', function ($join) use ($criaderoActivoId) {
+                $join->on('Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+                     ->where(function($query) use ($criaderoActivoId) {
+                         $query->where('Tipos_Comida.criadero_id', '=', $criaderoActivoId)
+                               ->orWhereNull('Tipos_Comida.criadero_id');
+                     });
+            })
             ->whereBetween('Registros_Alimentacion.created_at', [$inicioAnterior->startOfDay(), $finAnterior->endOfDay()])
             ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
             ->groupBy('Tipos_Comida.nombre_comida')
@@ -417,7 +433,13 @@ class ReporteController extends Controller
         $dispensadorIds = Dispensador::where('criadero_id', $criaderoActivoId)->pluck('id_dispensador');
 
         $consumoPorTipo = RegistroAlimentacion::whereIn('id_dispensador', $dispensadorIds)
-            ->join('Tipos_Comida', 'Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+            ->join('Tipos_Comida', function ($join) use ($criaderoActivoId) {
+                $join->on('Registros_Alimentacion.id_tipo_comida', '=', 'Tipos_Comida.id_tipo_comida')
+                     ->where(function($query) use ($criaderoActivoId) {
+                         $query->where('Tipos_Comida.criadero_id', '=', $criaderoActivoId)
+                               ->orWhereNull('Tipos_Comida.criadero_id');
+                     });
+            })
             ->whereBetween('Registros_Alimentacion.created_at', [$fechaInicio->startOfDay(), $fechaFin->endOfDay()])
             ->select('Tipos_Comida.nombre_comida', DB::raw('SUM(cantidad_dispensada_gramos) as total_consumido'))
             ->groupBy('Tipos_Comida.nombre_comida')

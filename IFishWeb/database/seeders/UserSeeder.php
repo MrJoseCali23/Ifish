@@ -29,6 +29,7 @@ class UserSeeder extends Seeder
         User::create(['name' => 'Ana Maria Quiroga', 'email' => 'ana.q@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
         User::create(['name' => 'Carlos Mendoza', 'email' => 'carlos.m@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
         User::create(['name' => 'Sofia Villarroel', 'email' => 'sofia.v@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
+        User::create(['name' => 'Jose Callisaya', 'email' => 'jose.c@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Activo']);
 
         // 3. Dueño Inactivo
         User::create(['name' => 'Jorge Andrade', 'email' => 'jorge.a@cliente-inactivo.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Inactivo']);

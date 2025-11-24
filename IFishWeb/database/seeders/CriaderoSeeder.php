@@ -29,5 +29,12 @@ class CriaderoSeeder extends Seeder
         Criadero::create(['nombre' => 'Tambaqui Tropical', 'user_id' => $dueños[3]->id, 'ubicacion' => 'Trinidad']);
         // Dueño 5 (ID 6) - 1 criadero archivado
         Criadero::create(['nombre' => 'Criadero Antiguo', 'user_id' => $dueños[4]->id, 'ubicacion' => 'Sucre', 'estado' => 'Archivado']);
+
+        // Jose Callisaya - 2 criaderos
+        $jose = User::where('email', 'jose.c@cliente.com')->first();
+        if ($jose) {
+            Criadero::create(['nombre' => 'Criadero Principal', 'user_id' => $jose->id, 'ubicacion' => 'Cochabamba']);
+            Criadero::create(['nombre' => 'Criadero de Pruebas', 'user_id' => $jose->id, 'ubicacion' => 'Santa Cruz']);
+        }
     }
 }
