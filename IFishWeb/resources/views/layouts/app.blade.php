@@ -486,6 +486,21 @@
     <!-- Contenido principal -->
     <div class="main-content">
         <div class="container-fluid p-0">
+            
+            {{-- Alertas Globales de Nivel de Comida (para Dueños) --}}
+            @if (Auth::check() && Auth::user()->rol === 'Dueño' && isset($dispensadoresCriticos) && $dispensadoresCriticos->isNotEmpty())
+            <div class="container">
+                <div class="alert alert-info alert-dismissible fade show d-flex align-items-center" role="alert">
+                    <i class="bi bi-info-circle-fill me-2 fs-5"></i>
+                    <div>
+                        <strong>Atención:</strong> Tienes {{ count($dispensadoresCriticos) }} dispensador(es) con nivel de comida bajo.
+                        <a href="{{ route('dashboard') }}" class="alert-link ms-2">Ver detalles en el Dashboard.</a>
+                    </div>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </div>
+            @endif
+
             <div class="content-wrapper">
                 @yield('content')
             </div>

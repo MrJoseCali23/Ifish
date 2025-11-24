@@ -70,7 +70,7 @@
                 <div class="card shadow-sm h-100">
                     <div class="card-header fw-bold text-danger"><i class="bi bi-exclamation-triangle-fill me-2"></i>Alertas de Nivel de Comida</div>
                     <ul class="list-group list-group-flush">
-                        @forelse($data['dispensadoresCriticos'] ?? [] as $dispensador)
+                        @forelse($dispensadoresCriticos ?? [] as $dispensador)
                             <li class="list-group-item">
                                 <strong>{{ $dispensador->modelo }}</strong>:
                                 Nivel bajo ({{ number_format($dispensador->nivel_comida_actual_kg, 1) }} Kg)
@@ -166,12 +166,12 @@
         }
     });
      document.addEventListener('DOMContentLoaded', () => {
-        @if(isset($data['dispensadoresCriticos']) && count($data['dispensadoresCriticos']) > 0)
+        @if(isset($dispensadoresCriticos) && count($dispensadoresCriticos) > 0)
             if (Notification.permission === "granted") {
-                @foreach($data['dispensadoresCriticos'] as $disp)
+                @foreach($dispensadoresCriticos as $disp)
                     new Notification("⚠️ Nivel bajo en {{ $disp->modelo }}", {
                         body: "Nivel actual: {{ number_format($disp->nivel_comida_actual_kg, 1) }} Kg",
-                        icon: "/images/ifish_icon.png"
+                        icon: "{{ asset('images/logo2.png') }}"
                     });
                 @endforeach
             } else if (Notification.permission !== "denied") {

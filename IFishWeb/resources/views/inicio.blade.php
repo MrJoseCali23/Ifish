@@ -112,6 +112,24 @@ document.addEventListener('DOMContentLoaded', function () {
             console.error('Error al obtener el clima:', error);
             weatherInfo.innerText = "No se pudo cargar el clima.";
         });
+
+    // Lógica para notificaciones de navegador
+    @if(isset($dispensadoresCriticos) && $dispensadoresCriticos->isNotEmpty())
+        if (Notification.permission === "granted") {
+            @foreach($dispensadoresCriticos as $disp)
+                new Notification("⚠️ Nivel bajo en {{ $disp->modelo }}", {
+                    body: "Nivel actual: {{ number_format($disp->nivel_comida_actual_kg, 1) }} Kg",
+                    icon: "{{ asset('images/logo2.png') }}"
+                });
+            @endforeach
+        } else if (Notification.permission !== "denied") {
+            Notification.requestPermission().then(permission => {
+                if (permission === "granted") {
+                    new Notification("🔔 Notificaciones activadas para iFish");
+                }
+            });
+        }
+    @endif
 });
 </script>
 @endpush

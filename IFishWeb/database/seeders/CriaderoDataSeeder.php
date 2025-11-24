@@ -65,12 +65,20 @@ class CriaderoDataSeeder extends Seeder
         $dispensersToCreate = $functionalDispenserCreated ? $minDispensers - 1 : $minDispensers;
 
         for ($i = 0; $i < $dispensersToCreate; $i++) {
+            $modeloNombre = 'Dispensador Prueba ' . $dispensadorCounter++;
+            $initialFoodLevel = rand(1, 20) + (rand(0, 99) / 100);
+
+            if ($modeloNombre === 'Dispensador Prueba 2') {
+                $initialFoodLevel = 0.00;
+            }
+
             $dispensadores->push(Dispensador::create([
                 'mac_address' => $this->generateMacAddress(),
-                'modelo' => 'Dispensador Prueba ' . $dispensadorCounter++,
+                'modelo' => $modeloNombre,
                 'estado' => 'Activo',
                 'criadero_id' => $criadero->id,
                 'id_estanque' => $estanques->random()->id_estanque,
+                'nivel_comida_actual_kg' => $initialFoodLevel,
             ]));
         }
         
@@ -110,11 +118,16 @@ class CriaderoDataSeeder extends Seeder
                 for ($d = 60; $d >= 0; $d--) {
                     $fecha = Carbon::now()->subDays($d);
                     if ($d % 2 == 0) {
-                        $dispensador->update([
-                            'nivel_comida_actual_kg' => rand(1, 20) + (rand(0, 99) / 100),
+                        $updateData = [
                             'temperatura_agua' => rand(18, 25) + (rand(0, 99) / 100),
                             'ultimo_reporte' => $fecha,
-                        ]);
+                        ];
+
+                        if ($dispensador->modelo !== 'Dispensador Prueba 2') {
+                            $updateData['nivel_comida_actual_kg'] = rand(1, 20) + (rand(0, 99) / 100);
+                        }
+                        
+                        $dispensador->update($updateData);
                     }
 
                     foreach ($dispensador->horarios as $horario) {
