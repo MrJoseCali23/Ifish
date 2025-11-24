@@ -19,12 +19,12 @@ class DatabaseSeeder extends Seeder
     {
         // 1. Desactivar llaves foráneas y truncar tablas para un reinicio limpio
         Schema::disableForeignKeyConstraints();
-        DB::table('registros_alimentacion')->truncate();
-        DB::table('horarios_alimentacion')->truncate();
-        DB::table('dispensador_eventos')->truncate();
-        DB::table('dispensadores')->truncate();
-        DB::table('estanques')->truncate();
-        DB::table('tipos_comida')->truncate();
+        DB::table('Registros_Alimentacion')->truncate();
+        DB::table('Horarios_Alimentacion')->truncate();
+        DB::table('Dispensador_Eventos')->truncate();
+        DB::table('Dispensadores')->truncate();
+        DB::table('Estanques')->truncate();
+        DB::table('Tipos_Comida')->truncate();
         DB::table('criaderos')->truncate();
         DB::table('users')->truncate();
         Schema::enableForeignKeyConstraints();
