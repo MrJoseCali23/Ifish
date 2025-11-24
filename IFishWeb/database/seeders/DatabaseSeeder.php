@@ -21,7 +21,7 @@ class DatabaseSeeder extends Seeder
         Schema::disableForeignKeyConstraints();
         DB::table('Registros_Alimentacion')->truncate();
         DB::table('Horarios_Alimentacion')->truncate();
-        DB::table('Dispensador_Eventos')->truncate();
+        DB::table('dispensador_eventos')->truncate(); // Corrected to snake_case, singular
         DB::table('Dispensadores')->truncate();
         DB::table('Estanques')->truncate();
         DB::table('Tipos_Comida')->truncate();
