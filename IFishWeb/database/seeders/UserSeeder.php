@@ -11,10 +11,6 @@ class UserSeeder extends Seeder
 {
     public function run()
     {
-        DB::statement('SET FOREIGN_KEY_CHECKS=0;');
-        User::truncate();
-        DB::statement('SET FOREIGN_KEY_CHECKS=1;');
-
         // 1. Super Admin
         User::create([
             'name' => 'Admin iFISH',
@@ -24,14 +20,10 @@ class UserSeeder extends Seeder
             'estado' => 'Activo',
         ]);
 
-        // 2. Dueños Activos
-        User::create(['name' => 'Roberto Suarez', 'email' => 'roberto.s@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
-        User::create(['name' => 'Ana Maria Quiroga', 'email' => 'ana.q@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
-        User::create(['name' => 'Carlos Mendoza', 'email' => 'carlos.m@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
-        User::create(['name' => 'Sofia Villarroel', 'email' => 'sofia.v@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño']);
+        // 2. Dueños
+        User::create(['name' => 'Jorge Andrade', 'email' => 'jorge.a@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Activo']);
+        User::create(['name' => 'Ana Maria Quiroga', 'email' => 'ana.q@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Activo']);
+        User::create(['name' => 'Carlos Mendoza', 'email' => 'carlos.m@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Activo']);
         User::create(['name' => 'Jose Callisaya', 'email' => 'jose.c@cliente.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Activo']);
-
-        // 3. Dueño Inactivo
-        User::create(['name' => 'Jorge Andrade', 'email' => 'jorge.a@cliente-inactivo.com', 'password' => Hash::make('password'), 'rol' => 'Dueño', 'estado' => 'Inactivo']);
     }
 }

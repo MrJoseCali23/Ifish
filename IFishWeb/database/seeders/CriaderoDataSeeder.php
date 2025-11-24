@@ -21,7 +21,7 @@ class CriaderoDataSeeder extends Seeder
      * @param \App\Models\Criadero $criadero
      * @return void
      */
-    public function run(Criadero $criadero)
+    public function run(Criadero $criadero, & $dispensadorCounter)
     {
         // 1. Create TipoComida for the Criadero
         $tiposComida = collect();
@@ -47,33 +47,41 @@ class CriaderoDataSeeder extends Seeder
 
         // 3. Create Dispensadores for the Estanques
         $dispensadores = collect();
-        foreach ($estanques as $estanque) {
-            // Create 1 to 3 dispensers per estanque
-            for ($i = 0; $i < rand(1, 3); $i++) {
-                // Special dispenser for Jose Callisaya's "Criadero Principal"
-                if ($criadero->nombre === 'Criadero Principal' && $dispensadores->isEmpty()) {
-                     $dispensadores->push(Dispensador::create([
-                        'mac_address' => 'DC:4F:22:7D:8B:7C',
-                        'modelo' => 'Dispensador Funcional v1',
-                        'estado' => 'Activo',
-                        'criadero_id' => $estanque->criadero_id,
-                        'id_estanque' => $estanque->id_estanque,
-                    ]));
-                } else {
-                    $dispensadores->push(Dispensador::create([
-                        'mac_address' => $this->generateMacAddress(),
-                        'modelo' => 'Dispensador Prueba ' . rand(100, 999),
-                        'estado' => 'Activo',
-                        'criadero_id' => $estanque->criadero_id,
-                        'id_estanque' => $estanque->id_estanque,
-                    ]));
-                }
-            }
+        $functionalDispenserCreated = false;
+        $minDispensers = 3;
+
+        // Special dispenser for Jose Callisaya's "Criadero Principal"
+        if ($criadero->nombre === 'Criadero Principal') {
+            $dispensadores->push(Dispensador::create([
+                'mac_address' => 'DC:4F:22:7D:8B:7C',
+                'modelo' => 'Dispensador Funcional v1',
+                'estado' => 'Activo',
+                'criadero_id' => $criadero->id,
+                'id_estanque' => $estanques->random()->id_estanque,
+            ]));
+            $functionalDispenserCreated = true;
+        }
+        
+        $dispensersToCreate = $functionalDispenserCreated ? $minDispensers - 1 : $minDispensers;
+
+        for ($i = 0; $i < $dispensersToCreate; $i++) {
+            $dispensadores->push(Dispensador::create([
+                'mac_address' => $this->generateMacAddress(),
+                'modelo' => 'Dispensador Prueba ' . $dispensadorCounter++,
+                'estado' => 'Activo',
+                'criadero_id' => $criadero->id,
+                'id_estanque' => $estanques->random()->id_estanque,
+            ]));
         }
         
         // 4. Create Horarios and Simulation Data for each Dispensador
         $horas = ['08:00:00', '12:30:00', '17:00:00'];
         foreach($dispensadores as $dispensador) {
+            // Skip creating simulation data for the functional dispenser
+            if ($dispensador->modelo === 'Dispensador Funcional v1') {
+                continue;
+            }
+
             if ($tiposComida->isNotEmpty()) {
                 $comida = $tiposComida->random();
                 $dispensador->update(['current_tipo_comida_id' => $comida->id_tipo_comida]);
