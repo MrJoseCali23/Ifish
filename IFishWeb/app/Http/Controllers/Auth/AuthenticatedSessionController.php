@@ -8,14 +8,13 @@ use App\Providers\RouteServiceProvider;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\View\View;
 
 class AuthenticatedSessionController extends Controller
 {
     /**
      * Display the login view.
      */
-    public function create(): View
+    public function create()
     {
         return view('auth.login');
     }
@@ -29,7 +28,28 @@ class AuthenticatedSessionController extends Controller
 
         $request->session()->regenerate();
 
-        return redirect()->intended(RouteServiceProvider::HOME);
+        $user = Auth::user();
+
+        // --- INICIO DE LA NUEVA LÓGICA INTELIGENTE ---
+
+        // Si el usuario es un "Dueño"
+        if ($user->rol === 'Dueño') {
+            $criaderos = $user->criaderos;
+
+            // Si solo tiene UN criadero, lo seleccionamos automáticamente
+            if ($criaderos->count() === 1) {
+                // Guardamos el ID del único criadero en la sesión
+                session(['active_criadero_id' => $criaderos->first()->id]);
+                // Y lo enviamos directo al dashboard
+                return redirect(RouteServiceProvider::HOME);
+            }
+            
+            // Si tiene más de uno, o ninguno, lo enviamos a la página de selección
+            return redirect()->route('criaderos.select');
+        }
+
+        // Si es Super Admin o cualquier otro rol, va al dashboard normal
+        return redirect(RouteServiceProvider::HOME);
     }
 
     /**

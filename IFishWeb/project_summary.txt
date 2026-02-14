@@ -1,0 +1,45 @@
+Resumen de Componentes Importantes del Proyecto iFish
+
+1.  Framework Principal:
+    *   Laravel (PHP): Core del proyecto, proporciona estructura y funcionalidades.
+
+2.  Lenguajes de Programación:
+    *   PHP: Backend.
+    *   JavaScript: Frontend interactivo.
+    *   HTML/CSS: Estructura y estilo del frontend.
+
+3.  Base de Datos:
+    *   MySQL (implícito): Base de datos relacional, gestionada con Eloquent ORM de Laravel.
+
+4.  Componentes Clave de Laravel:
+    *   Controllers (app/Http/Controllers): Manejan solicitudes HTTP (API, dashboard, gestión de criaderos, dispensadores, estanques, horarios, tipos de comida, usuarios, Super Admin).
+    *   Models (app/Models): Representan tablas de DB y lógica de datos (Criadero, Dispensador, Estanque, HorarioAlimentacion, RegistroAlimentacion, TipoComida, User).
+    *   Views (resources/views): Plantillas Blade para HTML.
+    *   Routes (routes/web.php, routes/api.php): Definen endpoints, incluyendo comunicación con ESP.
+    *   Migrations (database/migrations): Gestionan el esquema de la base de datos.
+    *   Middleware (app/Http/Middleware): Filtran solicitudes HTTP (ej. EnsureCriaderoIsSelected, IsAdmin).
+    *   Console Commands (app/Console/Commands): Para tareas programadas (ej. CheckScheduledFeedings).
+    *   Mailable (app/Mail): Envío de correos (restablecimiento de contraseña, invitaciones).
+    *   Policies (app/Policies): Reglas de autorización.
+    *   Scopes (app/Models/Scopes): Restricciones de consulta reutilizables.
+
+5.  Librerías y Herramientas Externas:
+    *   Composer: Gestor de dependencias de PHP.
+    *   NPM/Yarn: Gestor de paquetes de JavaScript.
+    *   Vite: Herramienta de construcción frontend.
+    *   Tailwind CSS / Bootstrap: Frameworks CSS.
+    *   Chart.js: Librería JavaScript para gráficos.
+    *   SweetAlert2: Librería JavaScript para alertas.
+    *   Barryvdh\DomPDF: Generación de PDFs.
+    *   Carbon: Manejo de fechas y horas en PHP.
+    *   ESP8266 (implícito): Microcontroladores para hardware.
+    *   WeatherAPI (implícito): API externa para datos meteorológicos.
+
+6.  Funcionalidades Clave:
+    *   Autenticación y Autorización de Usuarios (Roles: Admin, Dueño).
+    *   Gestión de Criaderos, Estanques y Dispensadores (inventario, asignación, eventos).
+    *   Gestión de Tipos de Comida.
+    *   Programación de Horarios de Alimentación (manual y automático).
+    *   Reportes y Estadísticas (historial, salud de plataforma, criaderos, exportación a PDF).
+    *   Comunicación con Dispositivos IoT (ESP).
+    *   Sistema de Invitación de Usuarios.

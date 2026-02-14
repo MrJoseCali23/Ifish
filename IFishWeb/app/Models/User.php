@@ -7,6 +7,8 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use App\Mail\CustomResetPasswordMail;
+use Illuminate\Support\Facades\Mail;
 
 class User extends Authenticatable
 {
@@ -18,11 +20,15 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-    'name',
-    'email',
-    'password',
-    'rol',
-];
+        'name',
+        'email',
+        'password',
+        'rol',
+        'estado',
+        // La columna 'criadero_id' ha sido eliminada.
+        'invitation_token',
+        'invitation_expires_at',
+    ];
 
     /**
      * The attributes that should be hidden for serialization.
@@ -32,6 +38,7 @@ class User extends Authenticatable
     protected $hidden = [
         'password',
         'remember_token',
+        'invitation_token',
     ];
 
     /**
@@ -41,5 +48,26 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'invitation_expires_at' => 'datetime', 
     ];
+
+    /**
+     * Un usuario (Dueño) puede tener muchos criaderos.
+     */
+    public function criaderos()
+    {
+        // Esta es la nueva relación "Uno a Muchos".
+        return $this->hasMany(Criadero::class, 'user_id');
+    }
+
+    /**
+     * Send the password reset notification.
+     *
+     * @param  string  $token
+     * @return void
+     */
+    public function sendPasswordResetNotification($token)
+    {
+        Mail::to($this->email)->send(new CustomResetPasswordMail($this, $token));
+    }
 }
